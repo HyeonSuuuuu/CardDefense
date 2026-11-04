@@ -1,0 +1,11 @@
+# 한 판 규칙 수치. 출처: 제안서 1장 주요 규칙, 밸런스 3·5장
+key,value
+round_time_limit,30
+spawn_duration,15
+hand_max,6
+clear_bonus_base,3
+clear_bonus_per_round,1
+starter_units,mage_1 archer_1 warrior_1
+bet_mob_multiplier,1.5
+# 손패 카드를 카드팩 버튼에 끌어다 놓아 팔 때 받는 칩 (2026-11-05 결정)
+sell_chips,1

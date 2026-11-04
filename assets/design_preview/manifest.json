@@ -1,0 +1,303 @@
+[
+  {
+    "path": "cards/frame_common.png",
+    "size": [
+      512,
+      768
+    ]
+  },
+  {
+    "path": "cards/frame_hero.png",
+    "size": [
+      512,
+      768
+    ]
+  },
+  {
+    "path": "cards/frame_rare.png",
+    "size": [
+      512,
+      768
+    ]
+  },
+  {
+    "path": "cards/frame_system.png",
+    "size": [
+      512,
+      768
+    ]
+  },
+  {
+    "path": "cards/card_back.png",
+    "size": [
+      512,
+      768
+    ]
+  },
+  {
+    "path": "cards/art_mage_1.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_mage_2.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_mage_3.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_archer_1.png",
+    "size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "cards/art_archer_2.png",
+    "size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "cards/art_archer_3.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_warrior_1.png",
+    "size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "path": "cards/art_warrior_2.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_warrior_3.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_sys_exit.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_sys_retry.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_sys_start.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_sys_title.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_spell_chips.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_spell_drum.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_spell_meteor.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "cards/art_promote.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "ui/button_end_turn.png",
+    "size": [
+      320,
+      112
+    ]
+  },
+  {
+    "path": "ui/digits.png",
+    "size": [
+      896,
+      96
+    ]
+  },
+  {
+    "path": "ui/icon_chip.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/logo.png",
+    "size": [
+      1024,
+      384
+    ]
+  },
+  {
+    "path": "ui/pack_booster.png",
+    "size": [
+      384,
+      512
+    ]
+  },
+  {
+    "path": "ui/pack_gold.png",
+    "size": [
+      384,
+      512
+    ]
+  },
+  {
+    "path": "ui/relic_crest_archer.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/relic_crest_mage.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/relic_crest_warrior.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/relic_hourglass.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/relic_lucky_dice.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/relic_thick_pack.png",
+    "size": [
+      128,
+      128
+    ]
+  },
+  {
+    "path": "ui/text_defeat.png",
+    "size": [
+      1024,
+      256
+    ]
+  },
+  {
+    "path": "ui/text_pause.png",
+    "size": [
+      1024,
+      256
+    ]
+  },
+  {
+    "path": "ui/text_victory.png",
+    "size": [
+      1024,
+      256
+    ]
+  },
+  {
+    "path": "ui/toggle_bet_off.png",
+    "size": [
+      256,
+      96
+    ]
+  },
+  {
+    "path": "ui/toggle_bet_on.png",
+    "size": [
+      256,
+      96
+    ]
+  },
+  {
+    "path": "textures/grass.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "textures/path_stone.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "textures/board_wood.png",
+    "size": [
+      512,
+      512
+    ]
+  },
+  {
+    "path": "textures/table_wood.png",
+    "size": [
+      512,
+      512
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-11-05",
+  "shared_character_prompt": "Individual square transparent game card illustration. Preserve the exact character identity, outfit, weapon and colors of assets/front/<ID>.png. Flat cartoon with thick dark brown #3B2A20 outlines, simple flat colors and one cel shadow step. Entire character in three-quarter front view, centered, all weapons and headwear inside square, no separate black pedestal, no card border, text or scenery. True RGBA transparency.",
+  "character_assets": [
+    {"id":"mage_1","subject":"Brown hair, floppy royal blue hat with silver band, blue gold robe, brown staff with blue orb, cute worried expression.","reference":"assets/front/mage_1.png","style_reference":"assets/cards/art_warrior_1.png"},
+    {"id":"mage_2","subject":"Blonde confident witch, blue hat with gold zigzag lightning band, gold-trim blue cloak, lightning staff, silver lower bands.","reference":"assets/front/mage_2.png","style_reference":"assets/cards/art_mage_1.png"},
+    {"id":"mage_3","subject":"Smiling old archmage with long white hair and beard, blue gold star hat and robe, golden crescent staff with blue crystal.","reference":"assets/front/mage_3.png","style_reference":"assets/cards/art_mage_1.png"},
+    {"id":"archer_3","subject":"Blonde forest elf, pointed ears, green eyes, leaf crown, green gold outfit, brown bow with gold wraps and green leaves, drawn arrow and taut bowstring.","reference":"assets/front/archer_3.png","style_reference":"assets/cards/art_mage_1.png"},
+    {"id":"warrior_2","subject":"Silver knight helmet and red crest, brown hair blue eyes, red scarf, silver armor, sword with gold red-gem hilt, red kite shield with gold emblem.","reference":"assets/front/warrior_2.png","style_reference":"assets/cards/art_mage_1.png"},
+    {"id":"warrior_3","subject":"Cute dragon knight, silver gold-horn helmet and red spikes, red scarf, gold trimmed armor, red white conical lance with gold tip.","reference":"assets/front/warrior_3.png","style_reference":"assets/cards/art_mage_1.png"}
+  ],
+  "shared_icon_prompt": "Individual square 512x512 RGBA transparent game asset. Flat cartoon illustration, thick dark brown #3B2A20 outlines, simple solid colors one shadow step, cute boardgame UI, centered whole object fills 75% square. No words, letters, card frame, border, separate ground shadow or extraneous objects.",
+  "icon_assets": {
+    "art_spell_meteor": "A burning dice meteor, ivory six-sided die with black round pips, orange and gold stylized fire tail flowing toward upper right, dynamic descending diagonal, no scene.",
+    "art_spell_drum": "A cute red cylindrical battle drum with cream drum head, gold rim, crisscross beige ropes, two wooden mallets crossed above it.",
+    "art_spell_chips": "A tan drawstring pouch filled with red and white casino chips, three loose chips in front, charming board game reward.",
+    "art_promote": "A bold golden upward pointing arrow surrounded by three gold five pointed stars, triumphant upgrade symbol.",
+    "art_sys_start": "Reference assets/cards/art_warrior_1.png: same spear warrior, silver helmet red scarf red tunic, round wooden shield and silver spear. Lean energetically forward in a running pose, large sky blue #70AADC arrow pointing right beside him. All objects within square, transparent margins."
+  },
+  "shared_texture_prompt": "Individual square 512x512 opaque game texture. Seamless repeating top-down flat cartoon texture, tileable on both axes. No perspective, shadows, lighting, borders, labels or extraneous objects.",
+  "texture_assets": {
+    "grass": "#91B86D base, sparse short grass tufts in two greens, very few tiny white daisies.",
+    "path_stone": "Large warm cream beige sandstone paving stones, shallow thin dark beige cracks, unobtrusive.",
+    "board_wood": "Warm #BC9067 boardgame border wood grain, smooth broad flowing brown grain, simple two tones, no planks or nails.",
+    "table_wood": "Honey brown tabletop wood, wider subtle horizontal grain, medium #B48258, flat two tones."
+  },
+  "other_assets": "25 deterministic UI assets authored by tools/build_ui_assets.py and tools/finalize_ui_assets.py, with editable SVG sources in assets/design_sources. Runtime PNGs use Malgun Gothic Bold; editable Figma text uses available Noto Sans KR Bold.",
+  "normalization": "ImageGen outputs copied to project with RGBA conversion and requested pixel dimensions; original generated files preserved."
+}

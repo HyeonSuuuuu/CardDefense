@@ -1,0 +1,13 @@
+# 말 9종. 출처: 카드디펜스-밸런스.md 1장. id = assets/obj 모델 이름 (_1 일반, _2 희귀, _3 영웅)
+# class: mage / archer / warrior, tier: 0 일반 1 희귀 2 영웅
+# interval: 공격 간격(초), range: 사거리(칸), splash: 범위 반경(0이면 한 마리)
+id,name,class,tier,damage,interval,range,splash
+mage_1,꼬마 마법사,mage,0,6,1.2,1.8,1.0
+mage_2,번개 마녀,mage,1,14,1.1,2.6,1.2
+mage_3,대마법사,mage,2,40,1.6,3.6,1.5
+archer_1,꼬마 궁수,archer,0,10,0.8,1.8,0.4
+archer_2,석궁수,archer,1,22,0.7,2.6,0.5
+archer_3,숲의 엘프,archer,2,55,0.6,3.6,0.7
+warrior_1,꼬마 창병,warrior,0,18,0.9,1.8,0
+warrior_2,기사,warrior,1,45,0.8,2.6,0
+warrior_3,용기사,warrior,2,130,0.7,3.6,0

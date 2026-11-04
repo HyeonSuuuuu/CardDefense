@@ -1,0 +1,8 @@
+# 주문 카드. 출처: 밸런스 4장. rarity: 0 일반 1 희귀 2 영웅
+# target: point(판 위 지점) / slot(칸) / none(즉시)
+# 효과량 = (amount + amount_per_round × 라운드) × (dice가 1이면 주사위 눈 1~6)
+# radius: 칸 단위 범위, multiplier: 배율 효과, duration: 지속 시간(초)
+id,name,rarity,target,radius,amount,amount_per_round,dice,multiplier,duration
+meteor_dice,운석 주사위,0,point,1.5,0,15,1,0,0
+battle_drum,전투의 북,1,slot,1,0,0,0,1.5,8
+chip_pouch,칩 주머니,2,none,0,6,1,0,0,0

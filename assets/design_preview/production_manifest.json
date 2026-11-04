@@ -1,0 +1,343 @@
+{
+  "date": "2026-11-05",
+  "figma_url": "https://www.figma.com/design/7bJe7e36VbwEZh3YKRbHju/",
+  "new_asset_count": 40,
+  "existing_card_art_reused": 3,
+  "existing_obj_preserved": 13,
+  "figma_text_font": "Noto Sans KR Bold",
+  "png_ui_font": "Malgun Gothic Bold",
+  "digits": {
+    "cell": [
+      64,
+      96
+    ],
+    "order": "0123456789/×+:",
+    "glyph_height": 76
+  },
+  "textures": "2x2 repeat preview visually checked; mean opposite-edge RGB difference 1.1–2.6 / 255",
+  "items": [
+    {
+      "file": "cards/frame_common.png",
+      "width": 512,
+      "height": 768,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/frame_rare.png",
+      "width": 512,
+      "height": 768,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/frame_hero.png",
+      "width": 512,
+      "height": 768,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/frame_system.png",
+      "width": 512,
+      "height": 768,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/card_back.png",
+      "width": 512,
+      "height": 768,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_mage_1.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_mage_2.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_mage_3.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_archer_3.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_warrior_2.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_warrior_3.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_sys_start.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_sys_exit.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_sys_retry.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_sys_title.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/logo.png",
+      "width": 1024,
+      "height": 384,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/pack_booster.png",
+      "width": 384,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/icon_chip.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/button_end_turn.png",
+      "width": 320,
+      "height": 112,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/text_victory.png",
+      "width": 1024,
+      "height": 256,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/text_defeat.png",
+      "width": 1024,
+      "height": 256,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/digits.png",
+      "width": 896,
+      "height": 96,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "textures/grass.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": false,
+      "status": "complete"
+    },
+    {
+      "file": "textures/path_stone.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": false,
+      "status": "complete"
+    },
+    {
+      "file": "textures/board_wood.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": false,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_spell_meteor.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_lucky_dice.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_thick_pack.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_hourglass.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_crest_mage.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_crest_archer.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/relic_crest_warrior.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/toggle_bet_off.png",
+      "width": 256,
+      "height": 96,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/toggle_bet_on.png",
+      "width": 256,
+      "height": 96,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/text_pause.png",
+      "width": 1024,
+      "height": 256,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "textures/table_wood.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": false,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_spell_drum.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_spell_chips.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "cards/art_promote.png",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    },
+    {
+      "file": "ui/pack_gold.png",
+      "width": 384,
+      "height": 512,
+      "mode": "RGBA",
+      "transparent": true,
+      "status": "complete"
+    }
+  ],
+  "figma_battle_url": "https://www.figma.com/design/7bJe7e36VbwEZh3YKRbHju/?node-id=3-1629",
+  "figma_library_url": "https://www.figma.com/design/7bJe7e36VbwEZh3YKRbHju/?node-id=3-1063",
+  "figma_validation": "986 selected leaf layers across library and three screens; text uses Noto Sans KR Bold; image/vector/text layers preserved; screenshots saved."
+}

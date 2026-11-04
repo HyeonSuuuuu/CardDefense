@@ -1,0 +1,10 @@
+# 연출 수치 (이현수). 튜터가 제안한 첫 값이며 F5로 다시 읽으며 조정한다.
+# type: EffectType 이름 (Vfx/EffectSystem.h) / shape: ring(수평으로 퍼짐) burst(사방) line(target으로) bezier(칩 숫자로)
+# speed: 초당 칸, life: 초, size: 칸 (start → end로 변함), color: #RRGGBBAA (start → end), gravity: y 가속도(아래는 음수)
+type,shape,count,speed_min,speed_max,life_min,life_max,size_start,size_end,color_start,color_end,gravity
+SummonDust,ring,24,1.5,2.5,0.4,0.7,0.25,0.05,#E8D9B8C0,#BC906700,0
+Projectile,line,1,8,8,0.3,0.3,0.18,0.18,#FFF0CFFF,#FFF0CFFF,0
+Hit,burst,6,1,2,0.15,0.3,0.12,0.02,#FFFFFFFF,#FFE08000,0
+Death,burst,16,2,4,0.5,0.9,0.15,0.03,#2A2A30FF,#2A2A3000,-9.8
+ChipFly,bezier,3,0,0,0.6,0.8,0.2,0.12,#E8463CFF,#FFD24AFF,0
+Meteor,burst,40,3,6,0.6,1.2,0.35,0.05,#FF9A3CFF,#5A1E0A00,-6

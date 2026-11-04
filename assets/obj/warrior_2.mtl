@@ -1,0 +1,5 @@
+newmtl warrior_2
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+map_Kd ../textures/warrior_2.png

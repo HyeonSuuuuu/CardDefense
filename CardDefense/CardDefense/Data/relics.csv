@@ -1,0 +1,10 @@
+# 유물 6종 (중첩 상한 없음, 1개당 효과). 출처: 밸런스 6장
+# effect: rare_chance(희귀 이상 확률 %p) / pack_extra_card(팩 카드 +n) / round_time(제한 시간 +초) / class_damage(클래스 피해 +%)
+# target_class: class_damage일 때만 mage / archer / warrior, 나머지는 -
+id,name,effect,target_class,amount
+lucky_dice,행운의 주사위,rare_chance,-,5
+thick_pack,두툼한 팩,pack_extra_card,-,1
+hourglass,모래시계,round_time,-,5
+mage_crest,마법사의 문장,class_damage,mage,20
+archer_crest,궁수의 문장,class_damage,archer,20
+warrior_crest,전사의 문장,class_damage,warrior,20

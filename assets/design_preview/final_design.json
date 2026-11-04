@@ -1,0 +1,20 @@
+{
+  "status": "user-approved",
+  "version": "v6",
+  "figma_file": "7bJe7e36VbwEZh3YKRbHju",
+  "figma_page": "01 최종 확정 · 게임 UI",
+  "screens": [
+    {"name": "01 정비 · 최종 확정", "source": "UX_v6_prepare.svg", "node": "21:4173"},
+    {"name": "02 전투 · 최종 확정", "source": "UX_v6_battle.svg", "node": "21:4428"},
+    {"name": "03 카드 확대 · 최종 확정", "source": "UX_v6_hover.svg", "node": "21:3913"}
+  ],
+  "canvas": [1600, 900],
+  "card_width": 175,
+  "hover_card_width": 210,
+  "turn_button_size": [290, 89],
+  "turn_label_size": 36,
+  "implementation_status": "Design reference only; OpenGL implementation pending",
+  "archive_page": "03 보관 · 이전 시안",
+  "resource_page": "02 리소스 · 원본"
+}
+

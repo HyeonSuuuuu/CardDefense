@@ -1,0 +1,33 @@
+# Visual Studio 빌드 결과물·사용자 설정
+.vs/
+x64/
+Win32/
+Debug/
+Release/
+*.user
+*.pch
+*.ipch
+*.pdb
+*.ilk
+*.idb
+*.iobj
+*.ipdb
+*.tlog
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# 작업용·폐기 폴더
+_workspace/
+폐기/
+
+# 교수님 과제 안내 자료 (공개 저장소에 올리지 않음)
+2026-2 컴그 최종 프로젝트.pdf
+
+# 디자인 시안 SVG (PNG 내장, 파일당 5~60MB, 게임 실행에 사용하지 않음)
+assets/design_preview/*.svg
+
+# Blender 자동 백업
+*.blend1

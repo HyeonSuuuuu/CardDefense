@@ -1,0 +1,8 @@
+# 적 4종. 출처: 밸런스 2장. id = assets/obj 모델 이름
+# hp_scale: 라운드 기본 체력에 곱함, fixed_hp: 0보다 크면 배율 대신 이 체력(보스)
+# speed: 초당 칸 수(= 초당 뛰는 횟수), chips: 처치 칩
+id,name,hp_scale,fixed_hp,speed,chips
+enemy_skeleton,해골 병사,1,0,2.0,1
+enemy_goblin,고블린,0.5,0,3.6,1
+enemy_orc,오크,3,0,1.2,3
+boss_king,그림자 왕,1,8000,1.0,0
