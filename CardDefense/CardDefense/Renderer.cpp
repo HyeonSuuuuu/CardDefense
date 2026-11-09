@@ -39,6 +39,8 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	Draw(renderer.program, renderer.axes, glm::mat4(1.f));
 
 	RenderBoard(renderer);
+	RenderUnits(renderer, game);
+	RenderMobs(renderer, game);
 }
 
 void RenderBoard(const Renderer& renderer)
@@ -59,4 +61,14 @@ void RenderBoard(const Renderer& renderer)
 			Draw(renderer.program, renderer.cube, model);
 		}
 	}
+}
+
+void RenderUnits(const Renderer& renderer, const Game& game)
+{
+	// TODO(이현수): 말마다 타일 위에 큐브 (모델이 준비되면 OBJ로 교체)
+}
+
+void RenderMobs(const Renderer& renderer, const Game& game)
+{
+	// TODO(이현수): 몹마다 PathPosition(mob.pathPos) 위치에 큐브
 }

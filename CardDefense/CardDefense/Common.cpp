@@ -60,12 +60,15 @@ Mesh CreateMesh(const std::vector<float>& vertices, const std::vector<unsigned>&
 	glBindVertexArray(m.vao);
 	glBindBuffer(GL_ARRAY_BUFFER, m.vbo);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	const GLsizei stride = VertexFloats * sizeof(float);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);                    // 위치
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));  // 법선
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));  // UV
+	glEnableVertexAttribArray(2);
 	if (indices.empty()) {
-		m.count = (GLsizei)(vertices.size() / 6);
+		m.count = (GLsizei)(vertices.size() / VertexFloats);
 	}
 	else {
 		glGenBuffers(1, &m.ebo);
@@ -79,10 +82,11 @@ Mesh CreateMesh(const std::vector<float>& vertices, const std::vector<unsigned>&
 
 Mesh CreateAxes()
 {
+	// 선이라 법선·UV는 쓰지 않는다 (0으로 채움)
 	std::vector<float> v = {
-		-2.f, 0.f, 0.f, 1.f, 0.f, 0.f,   2.f, 0.f, 0.f, 1.f, 0.f, 0.f,
-		0.f, -2.f, 0.f, 0.f, 1.f, 0.f,   0.f, 2.f, 0.f, 0.f, 1.f, 0.f,
-		0.f, 0.f, -2.f, 0.f, 0.f, 1.f,   0.f, 0.f, 2.f, 0.f, 0.f, 1.f,
+		-2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,   2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
+		0.f, -2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,   0.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
+		0.f, 0.f, -2.f, 0.f, 0.f, 0.f, 0.f, 0.f,   0.f, 0.f, 2.f, 0.f, 0.f, 0.f, 0.f, 0.f,
 	};
 	return CreateMesh(v, {}, GL_LINES);
 }
@@ -93,19 +97,23 @@ Mesh CreateCube()
 		{ -0.5f, -0.5f,  0.5f }, { 0.5f, -0.5f,  0.5f }, { 0.5f, 0.5f,  0.5f }, { -0.5f, 0.5f,  0.5f },
 		{ -0.5f, -0.5f, -0.5f }, { 0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, -0.5f }, { -0.5f, 0.5f, -0.5f },
 	};
+	// 면마다 꼭짓점 4개 (바깥에서 봤을 때 반시계 방향)
 	const int faces[6][4] = {
 		{ 0, 1, 2, 3 }, { 5, 4, 7, 6 }, { 4, 0, 3, 7 }, { 1, 5, 6, 2 }, { 3, 2, 6, 7 }, { 4, 5, 1, 0 },
 	};
-	const glm::vec3 colors[6] = {
-		{ 1.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { 0.f, 0.f, 1.f }, { 1.f, 1.f, 0.f }, { 1.f, 0.f, 1.f }, { 0.f, 1.f, 1.f },
+	const glm::vec3 normals[6] = {
+		{ 0.f, 0.f, 1.f }, { 0.f, 0.f, -1.f }, { -1.f, 0.f, 0.f }, { 1.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { 0.f, -1.f, 0.f },
 	};
+	const glm::vec2 uvs[4] = { { 0.f, 0.f }, { 1.f, 0.f }, { 1.f, 1.f }, { 0.f, 1.f } };
+
 	std::vector<float> v;
 	std::vector<unsigned> i;
 	for (int f = 0; f < 6; ++f) {
 		unsigned base = f * 4;
 		for (int k = 0; k < 4; ++k) {
 			glm::vec3 q = p[faces[f][k]];
-			v.insert(v.end(), { q.x, q.y, q.z, colors[f].r, colors[f].g, colors[f].b });
+			glm::vec3 n = normals[f];
+			v.insert(v.end(), { q.x, q.y, q.z, n.x, n.y, n.z, uvs[k].x, uvs[k].y });
 		}
 		i.insert(i.end(), { base, base + 1, base + 2, base, base + 2, base + 3 });
 	}
@@ -120,7 +128,11 @@ void SetMat4(GLuint program, const char* name, const glm::mat4& m)
 void SetVec3(GLuint program, const char* name, const glm::vec3& v)
 {
 	glUniform3fv(glGetUniformLocation(program, name), 1, glm::value_ptr(v));
+}
 
+void SetInt(GLuint program, const char* name, int v)
+{
+	glUniform1i(glGetUniformLocation(program, name), v);
 }
 
 void Draw(GLuint program, const Mesh& m, const glm::mat4& model)
@@ -133,43 +145,4 @@ void Draw(GLuint program, const Mesh& m, const glm::mat4& model)
 	else {
 		glDrawArrays(m.mode, 0, m.count);
 	}
-}
-
-glm::mat4 Local(const Object& o, bool isHand)
-{
-	glm::mat4 model(1.f);
-
-	model = glm::translate(model, o.position);
-	model = glm::translate(model, o.pivot);
-	
-	model = glm::rotate(model, glm::radians(o.roll), glm::vec3(1.f, 0.f, 0.f));
-	model = glm::rotate(model, glm::radians(o.yaw), glm::vec3(0.f, 1.f, 0.f));
-	model = glm::rotate(model, glm::radians(o.pitch), glm::vec3(0.f, 0.f, 1.f));
-
-
-	model = glm::translate(model, -o.pivot);
-	return model;
-}
-
-glm::mat4 World(const Object& o)
-{
-	glm::mat4 model = Local(o, false);
-	const Object* p = o.parent;
-	
-
-	while (p != nullptr) {
-		model = Local(*p, o.ishand) * model;
-		p = p->parent;
-	}
-	return model;
-}
-
-glm::vec3 WorldPosition(const Object& o)
-{
-	return glm::vec3(World(o) * glm::vec4(0.f, 0.f, 0.f, 1.f));
-}
-
-glm::vec3 WorldForward(const Object& o)
-{
-	return glm::normalize(glm::vec3(World(o) * glm::vec4(1.f, 0.f, 0.f, 0.f)));
 }

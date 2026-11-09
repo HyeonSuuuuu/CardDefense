@@ -13,32 +13,14 @@
 #pragma comment(lib, "glew32.lib")
 #pragma comment(lib, "glfw3.lib")
 
+// 정점 형식: 위치(location 0) + 법선(1) + UV(2) = float 8개
+constexpr int VertexFloats = 8;
+
 struct Mesh
 {
 	GLuint vao = 0, vbo = 0, ebo = 0;
 	GLsizei count = 0;
 	GLenum mode = GL_TRIANGLES;
-};
-
-struct Object
-{
-	Object(Mesh& m, glm::vec3 p, glm::vec3 s) : mesh(&m), position(p), scale(s) {}
-
-	Mesh* mesh = nullptr;
-	Object* parent = nullptr;
-	glm::vec3 position = glm::vec3(0.f);
-	glm::vec3 velocity = glm::vec3(0.f);
-	glm::vec3 scale = glm::vec3(1.f);
-	glm::vec3 pivot = glm::vec3(0.f);
-	float roll = 0.f;
-	float yaw = 0.f;
-	float pitch = 0.f;
-	glm::vec3 dir = glm::vec3(0.f);
-	bool select = true;
-
-	glm::vec3 color = glm::vec3(1.f, 0.f, 0.f);
-
-	bool ishand = false;
 };
 
 struct Camera
@@ -56,8 +38,5 @@ Mesh CreateAxes();
 Mesh CreateCube();
 void SetMat4(GLuint program, const char* name, const glm::mat4& m);
 void SetVec3(GLuint program, const char* name, const glm::vec3& v);
+void SetInt(GLuint program, const char* name, int v);
 void Draw(GLuint program, const Mesh& m, const glm::mat4& model);
-glm::mat4 Local(const Object& o);
-glm::mat4 World(const Object& o);
-glm::vec3 WorldPosition(const Object& o);
-glm::vec3 WorldForward(const Object& o);

@@ -24,6 +24,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 	switch (key) {
 	case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, true); break;
+	// 임시 키: Start 카드 끌어 놓기가 생기기 전까지 사용
+	case GLFW_KEY_ENTER:
+		if (game.phase == Phase::Title) {
+			game.phase = Phase::Prepare;
+		}
+		break;
+	case GLFW_KEY_SPACE:
+		if (game.phase == Phase::Prepare) {
+			EndTurn(game);
+		}
+		break;
 	}
 }
 
@@ -57,6 +68,9 @@ int main()
 		float now = (float)glfwGetTime();
 		float dt = now - last;
 		last = now;
+		if (dt > 0.1f) {
+			dt = 0.1f;  // 창 드래그·중단점 뒤 큰 dt로 몹이 순간이동하지 않게
+		}
 
 		GameUpdate(game, dt);
 		RendererUpdate(renderer, dt);

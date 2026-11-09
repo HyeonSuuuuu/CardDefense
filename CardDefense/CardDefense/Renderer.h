@@ -15,3 +15,5 @@ void RendererInit(Renderer& renderer);
 void RendererUpdate(Renderer& renderer, float dt);  // 카메라 자동 회전 같은 연출 쪽 업데이트
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
 void RenderBoard(const Renderer& renderer);
+void RenderUnits(const Renderer& renderer, const Game& game);
+void RenderMobs(const Renderer& renderer, const Game& game);
