@@ -32,19 +32,20 @@
 | `assets/` | 게임 리소스(카드·모델·텍스처·UI)와 디자인 시안. 설명은 [`assets/assets.md`](assets/assets.md) |
 | `tools/` | 에셋 변환·시안 생성용 Python 스크립트 |
 | `docs/` | 기획 문서 |
+| `external/` | GLEW·GLFW·GLM 헤더(`include/gl/`), lib, DLL(`bin/`, 빌드할 때 exe 폴더로 복사됨) |
 
 ## 빌드 환경
 
 - Visual Studio 2026 (플랫폼 도구 집합 v145), x64
 - C++ 언어 표준은 Visual Studio 기본값 (C++14)
-- GLEW, GLFW, GLM — 저장소에 포함되어 있지 않다. Visual Studio가 찾는 기본 include/lib 경로에 설치해야 한다.
+- GLEW, GLFW 3.5, GLM은 `external/`에 들어 있다 (x64 헤더·lib·DLL). 따로 설치할 필요 없다.
 - 링크: `opengl32.lib`, `glew32.lib`, `glfw3.lib`
 
 ## 실행
 
 1. `CardDefense/CardDefense.slnx`를 Visual Studio로 연다.
 2. x64 / Debug 또는 Release로 빌드하고 실행한다.
-3. 빌드하면 셰이더, `Data/`, `assets/obj`·`assets/textures`가 exe 폴더(`x64/Debug` 또는 `x64/Release`)로 복사되고, VS 실행 위치도 exe 폴더다. 코드의 경로는 exe 폴더 기준이다 (`shader.vert`, `Data/...`, `assets/obj/...`).
+3. 빌드하면 셰이더, `Data/`, `assets/obj`·`assets/textures`, `glew32.dll`·`glfw3.dll`이 exe 폴더(`x64/Debug` 또는 `x64/Release`)로 복사되고, VS 실행 위치도 exe 폴더다. 코드의 경로는 exe 폴더 기준이다 (`shader.vert`, `Data/...`, `assets/obj/...`).
 4. Debug는 GLFW DLL(`glfw3dll.lib` + `glfw3.dll`), Release는 정적 GLFW(`glfw3.lib`)로 링크한다.
 
 ## 저장소에 없는 것
