@@ -182,7 +182,15 @@
   <ItemGroup>
     <None Include="shader.vert" />
     <None Include="shader.frag" />
-    <None Include="Data\*.csv" />
+    <None Include="Data\units.csv" />
+    <None Include="Data\mobs.csv" />
+    <None Include="Data\rounds.csv" />
+    <None Include="Data\packs.csv" />
+    <None Include="Data\pack_outcomes.csv" />
+    <None Include="Data\spells.csv" />
+    <None Include="Data\relics.csv" />
+    <None Include="Data\economy.csv" />
+    <None Include="Data\effects.csv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,7 +5,11 @@
 
 enum class Phase { Title, Prepare, Battle, Result };
 
-// 보드: 안쪽 4x4 유닛 타일 + 바깥 한 칸 두께의 경로 = 6x6
+// ========================================================================
+// 보드
+//   6x6 칸: 안쪽 4x4는 말을 놓는 칸, 바깥 테두리는 몹이 도는 길
+// ========================================================================
+
 constexpr int BoardSize = 6;
 constexpr float TileSize = 1.f;
 constexpr int PathLength = (BoardSize - 1) * 4;  // 바깥 테두리 칸 수 = 20
@@ -15,6 +19,11 @@ constexpr int MaxHand = 6;
 bool IsPathTile(int i, int j);         // 바깥 테두리면 경로 타일
 glm::vec3 TileCenter(int i, int j);    // 타일 중심의 월드 좌표 (보드 중심 = 원점, y = 0)
 glm::vec3 PathPosition(float pathPos); // 경로 위 위치(0 ~ PathLength, 칸 단위 실수)의 월드 좌표
+
+// ========================================================================
+// 게임 상태
+//   말, 몹, 한 판의 전체 상태
+// ========================================================================
 
 // 필드에 놓인 말
 struct Unit
@@ -46,6 +55,11 @@ struct Game
 	std::vector<Mob> mobs;
 	int spawnedCount = 0;    // 이번 라운드에 나온 몹 수
 };
+
+// ========================================================================
+// 게임 흐름
+//   정비 → 전투 → 결과. 정비는 입력이, 전투는 GameUpdate가 진행한다
+// ========================================================================
 
 void GameInit(Game& game);
 void GameUpdate(Game& game, float dt);

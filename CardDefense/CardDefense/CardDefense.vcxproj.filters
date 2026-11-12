@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Game">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\Shaders">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a05}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Battle">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Cards">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Settings">
+      <UniqueIdentifier>{6f1c2a3e-1b7d-4c55-9a21-3e0d8b6f1a08}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Common.cpp" />
+    <ClCompile Include="Game.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Capture.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Csv.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Picking.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Obj.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Util\Texture.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Common.h" />
+    <ClInclude Include="Game.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Capture.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Csv.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Easing.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Picking.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Obj.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Texture.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\stb_image.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader.vert">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="shader.frag">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Data\units.csv">
+      <Filter>Data\Battle</Filter>
+    </None>
+    <None Include="Data\mobs.csv">
+      <Filter>Data\Battle</Filter>
+    </None>
+    <None Include="Data\rounds.csv">
+      <Filter>Data\Battle</Filter>
+    </None>
+    <None Include="Data\packs.csv">
+      <Filter>Data\Cards</Filter>
+    </None>
+    <None Include="Data\pack_outcomes.csv">
+      <Filter>Data\Cards</Filter>
+    </None>
+    <None Include="Data\spells.csv">
+      <Filter>Data\Cards</Filter>
+    </None>
+    <None Include="Data\relics.csv">
+      <Filter>Data\Cards</Filter>
+    </None>
+    <None Include="Data\economy.csv">
+      <Filter>Data\Settings</Filter>
+    </None>
+    <None Include="Data\effects.csv">
+      <Filter>Data\Settings</Filter>
+    </None>
+  </ItemGroup>
+</Project>
