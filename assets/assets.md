@@ -10,6 +10,7 @@
 | `glb/` | `<ID>.glb` | Tripo 원본 (손대지 않음) |
 | `obj/` | `<ID>.obj`, `<ID>.mtl` | 게임이 읽는 모델. `tools/glb2obj.py`로 GLB에서 변환: +Y 위, 정면 +Z, 원점 = 받침 바닥 중앙, 높이 1, 삼각형, `v/vt/vn` 인덱스 같음, vt는 OpenGL 기준(아래가 0) |
 | `textures/` | `<ID>.png` | `obj/<ID>.obj`의 텍스처(1024², 위쪽 행부터 저장 → `stbi_set_flip_vertically_on_load(true)`로 읽음). 판 텍스처(`grass.png` 등)도 여기 |
+| `paint/` | 아래 2D 표 | 판 원화: 구조 렌더(`tools/render_paint_base.py`), AI 원화, Blender 장면 |
 | `cards/` | 아래 2D 표 | 카드 틀·뒷면·카드 그림·완성 카드 |
 | `ui/` | 아래 2D 표 | 팩·아이콘·유물·로고 |
 | `concept/` | | GPT 콘셉트 그림(시트, 화면 목업). 게임이 읽지 않음 |
@@ -57,7 +58,9 @@
 | `ui/` | `icon_chip.png` | 칩 아이콘 | 완료 |
 | `ui/` | `relic_lucky_dice.png`, `relic_thick_pack.png`, `relic_hourglass.png`, `relic_crest_mage.png`, `relic_crest_archer.png`, `relic_crest_warrior.png` | 유물 6종 | 완료 |
 | `ui/` | `logo.png` | 타이틀 로고 "카드 디펜스" | 완료 |
-| `textures/` | `grass.png`, `path_stone.png`, `board_wood.png`, `table_wood.png` | 판 텍스처: 칸 풀밭, 길 돌, 판 테두리 나무, 작업대 | 완료 |
+| `textures/` | `grass.png`, `path_stone.png`, `board_wood.png`, `table_wood.png` | 판 텍스처: 칸 풀밭, 길 돌, 판 테두리 나무, 작업대. 판 원화의 구조 렌더에 씀 | 완료 |
+| `paint/` | `board_base.png`, `board_flat.png`, `board_paint.blend` | 기본 시점 판 구조 렌더(텍스처+외곽선 / 단색+외곽선)와 같은 장면 | 완료 |
+| `paint/` | `board_art.png` | 판 원화: `board_base.png`에 그림체를 입힌 그림 1920×1080 | 만들 것 |
 | `cards/` | `frame_system.png` | 화면 전환 카드(Start·Exit·Retry·Title) 틀, 파랑 테두리 | 완료 |
 | `ui/` | `digits.png` | 숫자 시트 896×96: 64×96 칸 14개 `0~9 / × + :`, 흰 글자 + 갈색 외곽선 (코드가 색을 곱함) | 완료 |
 | `ui/` | `button_end_turn.png` | "턴 종료" 버튼 | 완료 |
