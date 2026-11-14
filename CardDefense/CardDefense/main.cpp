@@ -1,5 +1,6 @@
 ﻿#include "Game.h"
 #include "Renderer.h"
+#include "Util/Picking.h"
 
 Game game;
 Renderer renderer;
@@ -35,6 +36,34 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			EndTurn(game);
 		}
 		break;
+	}
+}
+
+// 마우스가 가리키는 칸을 renderer.hoverI/J에 넣는다.
+// 마우스를 안 움직여도 카메라가 돌면 가리키는 칸이 바뀌므로 콜백이 아니라 매 프레임 부른다.
+void UpdateHover(GLFWwindow* window)
+{
+	renderer.hoverI = renderer.hoverJ = -1;
+
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+
+	// 마우스 좌표는 창 좌표 단위라 프레임버퍼가 아닌 창 크기로 나눈다 (화면 배율이 100%가 아니면 둘이 다르다).
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	if (width <= 0 || height <= 0) {
+		return;
+	}
+
+	float aspect = (float)width / height;
+	Ray ray = ScreenToRay(glm::vec2((float)x, (float)y), width, height,
+		ViewMatrix(renderer.camera), ProjectionMatrix(renderer, aspect));
+
+	glm::vec3 hit;
+	int i, j;
+	if (IntersectHorizontalPlane(ray, 0.f, hit) && WorldToTile(hit, i, j)) {
+		renderer.hoverI = i;
+		renderer.hoverJ = j;
 	}
 }
 
@@ -74,6 +103,7 @@ int main()
 
 		GameUpdate(game, dt);
 		RendererUpdate(renderer, dt);
+		UpdateHover(window);
 
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);

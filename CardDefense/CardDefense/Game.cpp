@@ -17,6 +17,20 @@ glm::vec3 TileCenter(int i, int j)
 	return glm::vec3((i - offset) * TileSize, 0.f, (j - offset) * TileSize);
 }
 
+bool WorldToTile(glm::vec3 p, int& i, int& j)
+{
+	// TileCenter의 역: 판 왼쪽 끝(-3)이 0이 되도록 밀고 칸 크기로 나눠 내림한다.
+	float half = BoardSize * 0.5f;
+	int ti = (int)std::floor(p.x / TileSize + half);
+	int tj = (int)std::floor(p.z / TileSize + half);
+	if (ti < 0 || ti >= BoardSize || tj < 0 || tj >= BoardSize) {
+		return false;
+	}
+	i = ti;
+	j = tj;
+	return true;
+}
+
 glm::vec3 PathPosition(float pathPos)
 {
 	// TODO(최명준): 테두리를 한 바퀴 도는 칸 순서를 정하고, 두 칸 사이를 보간한다.

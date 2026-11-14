@@ -18,6 +18,7 @@ constexpr int MaxHand = 6;
 
 bool IsPathTile(int i, int j);         // 바깥 테두리면 경로 타일
 glm::vec3 TileCenter(int i, int j);    // 타일 중심의 월드 좌표 (보드 중심 = 원점, y = 0)
+bool WorldToTile(glm::vec3 p, int& i, int& j); // 월드 좌표가 놓인 타일. 판 밖이면 false
 glm::vec3 PathPosition(float pathPos); // 경로 위 위치(0 ~ PathLength, 칸 단위 실수)의 월드 좌표
 
 // ========================================================================

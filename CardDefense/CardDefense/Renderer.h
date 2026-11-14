@@ -9,9 +9,12 @@ struct Renderer
 	Mesh axes, cube;
 	Camera camera;
 	bool isOrtho = false;
+	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
 };
 
 void RendererInit(Renderer& renderer);
+glm::mat4 ViewMatrix(const Camera& camera);
+glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect);
 void RendererUpdate(Renderer& renderer, float dt);  // 카메라 자동 회전 같은 연출 쪽 업데이트
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
 void RenderBoard(const Renderer& renderer);

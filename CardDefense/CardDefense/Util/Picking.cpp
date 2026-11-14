@@ -2,13 +2,34 @@
 
 Ray ScreenToRay(glm::vec2 mouse, int width, int height, const glm::mat4& view, const glm::mat4& projection)
 {
-	// TODO(이현수): 창 좌표 → NDC(-1~1, y 뒤집기) → 니어·파 평면의 두 점을
-	// inverse(projection * view)로 월드 좌표로 되돌리고(w로 나누기), 두 점으로 레이를 만든다.
-	return { glm::vec3(0.f), glm::vec3(0.f, -1.f, 0.f) };
+	auto x = 2 * mouse.x / width - 1;
+	auto y = 1 - 2 * mouse.y / height;
+	
+	glm::vec4 near = glm::vec4(x, y, -1, 1);
+	glm::vec4 far = glm::vec4(x, y, 1, 1);
+
+	glm::mat4 inv = glm::inverse(projection * view);
+	near = inv * near;
+	near /= near.w;
+	far = inv * far;
+	far/= far.w;
+
+	Ray ray;
+	ray.origin = glm::vec3(near);
+	ray.direction = glm::normalize(glm::vec3(far) - glm::vec3(near));
+
+	return ray;
 }
 
 bool IntersectHorizontalPlane(const Ray& ray, float planeY, glm::vec3& hit)
 {
-	// TODO(이현수): origin.y + t * direction.y = planeY 를 t에 대해 푼다. 평행하거나 t < 0 이면 false.
-	return false;
+	const auto& origin = ray.origin;
+	const auto& dir = ray.direction;
+	if (glm::abs(dir.y) < 1e-6f) // dir.y가 0인지부터 체크
+		return false;
+	auto t = (planeY - origin.y) / dir.y;
+	if (t < 0)
+		return false;
+	hit = origin + t * dir;
+	return true;
 }
