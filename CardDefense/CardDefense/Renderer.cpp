@@ -23,6 +23,11 @@ void RendererInit(Renderer& renderer)
 		renderer.mobModels.push_back(model);
 	}
 
+	renderer.grassTexture = LoadTexture("assets/textures/grass.png");
+	renderer.stoneTexture = LoadTexture("assets/textures/path_stone.png");
+	renderer.woodTexture = LoadTexture("assets/textures/board_wood.png");
+	renderer.tableTexture = LoadTexture("assets/textures/table_wood.png");
+
 	// 카드 그림은 tools/compose_cards.py로 합성한 완성 카드
 	for (const UnitData& ud : gameData.units) {
 		renderer.unitCards.push_back(LoadTexture(("assets/cards/card_" + ud.id + ".png").c_str()));
@@ -66,7 +71,7 @@ glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect)
 
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height)
 {
-	glClearColor(0.1f, 0.1f, 0.15f, 1.f);
+	glClearColor(0.16f, 0.12f, 0.1f, 1.f);  // 작업대 밖은 어두운 나무색
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
@@ -91,29 +96,59 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	RenderPreview(renderer, game);  // 반투명이라 불투명한 것을 다 그린 뒤에
 }
 
+// 텍스처를 입힌 상자 하나. repeat는 텍스처를 면마다 몇 번 반복할지 (GL_REPEAT로 감싼다)
+static void DrawTexturedBox(const Renderer& renderer, GLuint texture, glm::vec3 center, glm::vec3 size, glm::vec3 color, glm::vec2 repeat)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	SetInt(renderer.program, "uTexture", 0);
+	SetInt(renderer.program, "uUseTexture", texture ? 1 : 0);
+	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, repeat.x, repeat.y));
+	SetVec3(renderer.program, "uColor", color);
+	glm::mat4 model = glm::translate(glm::mat4(1.f), center);
+	Draw(renderer.program, renderer.cube, glm::scale(model, size));
+	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, 1.f, 1.f));
+	SetInt(renderer.program, "uUseTexture", 0);
+}
+
 void RenderBoard(const Renderer& renderer, const Game& game)
 {
-	const glm::vec3 pathColor(0.74f, 0.56f, 0.40f);  // 나무 #BC9067
-	const glm::vec3 tileColor(0.57f, 0.72f, 0.43f);  // 풀 #91B86D
-	const glm::vec3 hoverColor(1.f, 0.94f, 0.81f);   // 카드 바탕 #FFF0CF: 카드를 놓을 수 있는 칸
-	const glm::vec3 blockedColor(0.85f, 0.45f, 0.4f); // 놓을 수 없는 칸
+	const glm::vec3 white(1.f);
+	const glm::vec3 hoverColor(1.25f, 1.2f, 0.9f);    // 카드를 놓을 수 있는 칸: 밝게
+	const glm::vec3 blockedColor(1.f, 0.45f, 0.4f);   // 놓을 수 없는 칸: 붉게
 	const float height = 0.1f;
-	const float gap = 0.05f;  // 타일 사이 틈 (경계가 보이도록)
+	const float gap = 0.06f;  // 타일 사이 틈 (경계가 보이도록)
+	const float boardHalf = BoardSize * TileSize * 0.5f;
 
+	// 작업대: 넓은 나무판, 텍스처를 여러 번 반복
+	DrawTexturedBox(renderer, renderer.tableTexture, glm::vec3(0.f, -0.45f, 0.f), glm::vec3(30.f, 0.1f, 30.f), white, glm::vec2(5.f));
+
+	// 판 바닥(초록 펠트)과 나무 테두리 네 개
+	const float rim = 0.22f;
+	// 바닥 윗면(y = -0.05)이 칸 윗면(y = 0)보다 낮아야 칸이 바닥에 묻히지 않는다
+	DrawTexturedBox(renderer, 0, glm::vec3(0.f, -0.25f, 0.f), glm::vec3(boardHalf * 2.f + 0.1f, 0.4f, boardHalf * 2.f + 0.1f), glm::vec3(0.36f, 0.47f, 0.31f), glm::vec2(1.f));
+	float railLength = boardHalf * 2.f + rim * 2.f;
+	float railOffset = boardHalf + rim * 0.5f;
+	glm::vec3 railX(railLength, 0.5f, rim), railZ(rim, 0.5f, railLength);
+	DrawTexturedBox(renderer, renderer.woodTexture, glm::vec3(0.f, -0.15f, railOffset), railX, white, glm::vec2(4.f, 1.f));
+	DrawTexturedBox(renderer, renderer.woodTexture, glm::vec3(0.f, -0.15f, -railOffset), railX, white, glm::vec2(4.f, 1.f));
+	DrawTexturedBox(renderer, renderer.woodTexture, glm::vec3(railOffset, -0.15f, 0.f), railZ, white, glm::vec2(4.f, 1.f));
+	DrawTexturedBox(renderer, renderer.woodTexture, glm::vec3(-railOffset, -0.15f, 0.f), railZ, white, glm::vec2(4.f, 1.f));
+
+	// 칸: 길은 돌, 안쪽은 풀
 	for (int i = 0; i < BoardSize; ++i) {
 		for (int j = 0; j < BoardSize; ++j) {
 			// 윗면이 y = 0에 오도록 두께의 절반만큼 내린다.
 			glm::vec3 position = TileCenter(i, j) - glm::vec3(0.f, height * 0.5f, 0.f);
-			glm::mat4 model = glm::translate(glm::mat4(1.f), position);
-			model = glm::scale(model, glm::vec3(TileSize - gap, height, TileSize - gap));
+			glm::vec3 size(TileSize - gap, height, TileSize - gap);
 
-			glm::vec3 color = IsPathTile(i, j) ? pathColor : tileColor;
+			glm::vec3 color = white;
 			// 카드를 끄는 동안만 가리키는 칸을 강조한다
 			if (renderer.dragCard >= 0 && i == renderer.hoverI && j == renderer.hoverJ) {
 				color = CanPlayCard(game, renderer.dragCard, i, j) ? hoverColor : blockedColor;
 			}
-			SetVec3(renderer.program, "uColor", color);
-			Draw(renderer.program, renderer.cube, model);
+			GLuint texture = IsPathTile(i, j) ? renderer.stoneTexture : renderer.grassTexture;
+			DrawTexturedBox(renderer, texture, position, size, color, glm::vec2(1.f));
 		}
 	}
 }

@@ -20,6 +20,9 @@ struct Renderer
 	bool isOrtho = false;
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
 
+	// 판 텍스처
+	GLuint grassTexture = 0, stoneTexture = 0, woodTexture = 0, tableTexture = 0;
+
 	// UI 텍스처
 	std::vector<GLuint> unitCards;  // units.csv 순서
 	GLuint startCard = 0, exitCard = 0, retryCard = 0, titleCard = 0;
