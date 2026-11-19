@@ -301,6 +301,7 @@ bool PlaceUnit(Game& game, int handIndex, int i, int j)
 	u.attackTimer = 10.f;  // 처음엔 공격 연출이 보이지 않게
 	game.units.push_back(u);
 	game.hand.erase(game.hand.begin() + handIndex);
+	game.events.push_back({ EventType::Summon, TileCenter(i, j) });
 	return true;
 }
 
@@ -432,6 +433,7 @@ void UpdateUnits(Game& game, float dt)
 			if (k == target || inSplash) {
 				game.mobs[k].hp -= ud.damage;
 				game.mobs[k].hitTimer = 0.15f;
+				game.events.push_back({ EventType::Hit, PathPosition(game.mobs[k].pathPos) + glm::vec3(0.f, 0.3f, 0.f) });
 			}
 		}
 		u.cooldown = ud.interval;
@@ -445,6 +447,7 @@ void UpdateUnits(Game& game, float dt)
 			game.chips += gameData.mobs[game.mobs[k].type].chips;
 			++game.kills;
 			game.dying.push_back(game.mobs[k]);
+			game.events.push_back({ EventType::Death, PathPosition(game.mobs[k].pathPos) + glm::vec3(0.f, 0.3f, 0.f) });
 			game.mobs.erase(game.mobs.begin() + k);
 		}
 	}

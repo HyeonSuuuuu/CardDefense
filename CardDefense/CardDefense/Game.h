@@ -107,6 +107,14 @@ struct Mob
 
 constexpr float DieTime = 0.7f;  // 죽은 몹이 사라지는 연출 시간(초)
 
+// 게임에서 일어난 일. Renderer가 읽어 파티클 같은 연출을 만들고, main이 매 프레임 비운다.
+enum class EventType { Summon, Hit, Death };
+struct GameEvent
+{
+	EventType type;
+	glm::vec3 position;
+};
+
 struct Game
 {
 	Phase phase = Phase::Title;
@@ -123,6 +131,7 @@ struct Game
 	std::vector<Mob> mobs;
 	std::vector<Mob> dying;      // 죽어서 사라지는 중인 몹 (연출용, 판정에는 안 씀)
 	std::vector<int> spawnQueue; // 이번 라운드에 나올 몹 종류 순서
+	std::vector<GameEvent> events; // 이번 프레임에 일어난 일 (연출용)
 	int spawnedCount = 0;    // 이번 라운드에 나온 몹 수
 };
 

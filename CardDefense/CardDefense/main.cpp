@@ -171,7 +171,8 @@ int main()
 		}
 
 		GameUpdate(game, dt);
-		RendererUpdate(renderer, dt);
+		RendererUpdate(renderer, game, dt);
+		game.events.clear();  // 연출이 다 읽었으니 비운다
 		UpdateHover(window);
 
 		// 3D는 프레임버퍼 크기로, UI는 마우스와 같은 창 좌표로 그린다 (화면 배율이 100%가 아니면 둘이 다르다).

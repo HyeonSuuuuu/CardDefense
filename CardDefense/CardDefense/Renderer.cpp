@@ -1,6 +1,79 @@
 #include "Renderer.h"
 #include "Util/Texture.h"
+#include "Util/Csv.h"
+#include <random>
 #include <cmath>
+
+static std::mt19937 effectRng{ 1234u };
+
+static float RandomRange(float a, float b)
+{
+	return std::uniform_real_distribution<float>(a, std::max(a, b))(effectRng);
+}
+
+// "#RRGGBBAA" → 0~1 색
+static glm::vec4 ParseColor(const std::string& text)
+{
+	unsigned value = (unsigned)std::stoul(text.substr(1), nullptr, 16);
+	return glm::vec4((value >> 24) & 255, (value >> 16) & 255, (value >> 8) & 255, value & 255) / 255.f;
+}
+
+static void LoadEffects(Renderer& renderer)
+{
+	// EventType 순서에 맞춰 effects.csv에서 이름으로 찾는다
+	const char* names[] = { "SummonDust", "Hit", "Death" };
+	renderer.effects.assign(3, EffectData{});
+	CsvTable t;
+	if (!LoadCsv("Data/effects.csv", t)) {
+		return;
+	}
+	for (auto& row : t.rows) {
+		for (int k = 0; k < 3; ++k) {
+			if (row[CsvColumn(t, "type")] != names[k]) {
+				continue;
+			}
+			EffectData& e = renderer.effects[k];
+			e.ring = row[CsvColumn(t, "shape")] == "ring";
+			e.count = std::stoi(row[CsvColumn(t, "count")]);
+			e.speedMin = std::stof(row[CsvColumn(t, "speed_min")]);
+			e.speedMax = std::stof(row[CsvColumn(t, "speed_max")]);
+			e.lifeMin = std::stof(row[CsvColumn(t, "life_min")]);
+			e.lifeMax = std::stof(row[CsvColumn(t, "life_max")]);
+			e.sizeStart = std::stof(row[CsvColumn(t, "size_start")]);
+			e.sizeEnd = std::stof(row[CsvColumn(t, "size_end")]);
+			e.colorStart = ParseColor(row[CsvColumn(t, "color_start")]);
+			e.colorEnd = ParseColor(row[CsvColumn(t, "color_end")]);
+			e.gravity = std::stof(row[CsvColumn(t, "gravity")]);
+		}
+	}
+}
+
+// 파티클용 둥근 점 텍스처를 코드로 만든다 (가운데 1 → 가장자리 0)
+static GLuint CreateDotTexture()
+{
+	const int size = 64;
+	std::vector<unsigned char> pixels(size * size * 4);
+	for (int y = 0; y < size; ++y) {
+		for (int x = 0; x < size; ++x) {
+			float dx = (x + 0.5f) / size * 2.f - 1.f;
+			float dy = (y + 0.5f) / size * 2.f - 1.f;
+			float a = glm::clamp(1.f - std::sqrt(dx * dx + dy * dy), 0.f, 1.f);
+			unsigned char* p = &pixels[(y * size + x) * 4];
+			p[0] = p[1] = p[2] = 255;
+			p[3] = (unsigned char)(255.f * std::min(1.f, a * 1.8f));
+		}
+	}
+	GLuint texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	return texture;
+}
 
 void RendererInit(Renderer& renderer)
 {
@@ -10,6 +83,8 @@ void RendererInit(Renderer& renderer)
 	renderer.quad = CreateQuad();
 	renderer.disc = CreateDisc(48);
 	renderer.circle = CreateCircle(48);
+	renderer.dotTexture = CreateDotTexture();
+	LoadEffects(renderer);
 
 	// 모델 이름 = 수치 CSV의 id (assets/obj/<id>.obj). 못 읽으면 큐브로 그린다.
 	for (const UnitData& ud : gameData.units) {
@@ -45,9 +120,50 @@ void RendererInit(Renderer& renderer)
 	renderer.defeat = LoadTexture("assets/ui/text_defeat.png");
 }
 
-void RendererUpdate(Renderer& renderer, float dt)
+void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 {
 	renderer.camera.yaw += renderer.camera.yawDir * dt * 30.f;
+
+	// 이번 프레임의 게임 이벤트마다 파티클을 뿌린다
+	for (const GameEvent& event : game.events) {
+		int k = (int)event.type;
+		if (k < 0 || k >= (int)renderer.effects.size()) {
+			continue;
+		}
+		const EffectData& e = renderer.effects[k];
+		for (int n = 0; n < e.count; ++n) {
+			Particle p;
+			p.effect = k;
+			p.life = RandomRange(e.lifeMin, e.lifeMax);
+			float speed = RandomRange(e.speedMin, e.speedMax);
+			float angle = RandomRange(0.f, 6.2831853f);
+			glm::vec3 dir;
+			if (e.ring) {
+				dir = glm::vec3(std::cos(angle), 0.15f, std::sin(angle));  // 바닥을 따라 둥글게
+			}
+			else {
+				float up = RandomRange(-0.3f, 1.f);  // 사방으로, 위쪽이 조금 더 많게
+				float side = std::sqrt(1.f - up * up);
+				dir = glm::vec3(side * std::cos(angle), up, side * std::sin(angle));
+			}
+			p.position = event.position + glm::vec3(0.f, 0.05f, 0.f);
+			p.velocity = dir * speed;
+			renderer.particles.push_back(p);
+		}
+	}
+
+	// 움직이고, 수명이 다하면 지운다 (뒤에서부터 지워야 번호가 안 밀린다)
+	for (int k = (int)renderer.particles.size() - 1; k >= 0; --k) {
+		Particle& p = renderer.particles[k];
+		p.age += dt;
+		if (p.age >= p.life) {
+			renderer.particles.erase(renderer.particles.begin() + k);
+			continue;
+		}
+		p.velocity.y += renderer.effects[p.effect].gravity * dt;
+		p.velocity *= 1.f - 2.f * dt;  // 공기 저항
+		p.position += p.velocity * dt;
+	}
 }
 
 // 그리기와 마우스 피킹이 같은 행렬을 쓰도록 함수로 둔다.
@@ -96,6 +212,7 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	RenderUnits(renderer, game);
 	RenderMobs(renderer, game);
 	RenderPreview(renderer, game);  // 반투명이라 불투명한 것을 다 그린 뒤에
+	RenderParticles(renderer);
 }
 
 // 텍스처를 입힌 상자 하나. repeat는 텍스처를 면마다 몇 번 반복할지 (GL_REPEAT로 감싼다)
@@ -300,6 +417,51 @@ void RenderPreview(const Renderer& renderer, const Game& game)
 	DrawFigure(renderer, renderer.unitModels[card], center, 0.f, heights[ud.tier], UnitColor(ud));
 
 	SetFloat(renderer.program, "uAlpha", 1.f);
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+}
+
+void RenderParticles(const Renderer& renderer)
+{
+	if (renderer.particles.empty()) {
+		return;
+	}
+	// 빌보드: 카메라의 오른쪽·위쪽 축으로 사각형을 세워 항상 화면을 보게 한다
+	glm::mat4 view = ViewMatrix(renderer.camera);
+	glm::vec3 right(view[0][0], view[1][0], view[2][0]);
+	glm::vec3 up(view[0][1], view[1][1], view[2][1]);
+	glm::vec3 forward = glm::cross(right, up);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	SetInt(renderer.program, "uLighting", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderer.dotTexture);
+	SetInt(renderer.program, "uTexture", 0);
+	SetInt(renderer.program, "uUseTexture", 1);
+
+	for (const Particle& p : renderer.particles) {
+		const EffectData& e = renderer.effects[p.effect];
+		float t = p.age / p.life;  // 0 → 1 동안 크기와 색이 시작 값에서 끝 값으로
+		float size = glm::mix(e.sizeStart, e.sizeEnd, t);
+		glm::vec4 color = glm::mix(e.colorStart, e.colorEnd, t);
+
+		glm::mat4 model(1.f);
+		model[0] = glm::vec4(right * size, 0.f);
+		model[1] = glm::vec4(-up * size, 0.f);  // 사각형은 y가 아래로 커지므로 뒤집는다
+		model[2] = glm::vec4(forward, 0.f);
+		model[3] = glm::vec4(p.position, 1.f);
+		model = model * glm::translate(glm::mat4(1.f), glm::vec3(-0.5f, -0.5f, 0.f));
+
+		SetVec3(renderer.program, "uColor", glm::vec3(color));
+		SetFloat(renderer.program, "uAlpha", color.a);
+		Draw(renderer.program, renderer.quad, model);
+	}
+
+	SetFloat(renderer.program, "uAlpha", 1.f);
+	SetInt(renderer.program, "uUseTexture", 0);
+	SetInt(renderer.program, "uLighting", 1);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 }

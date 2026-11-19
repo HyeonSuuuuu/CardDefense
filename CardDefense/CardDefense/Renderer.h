@@ -10,6 +10,25 @@ struct Rect
 	float x = 0.f, y = 0.f, w = 0.f, h = 0.f;
 };
 
+// 파티클 한 종류의 수치 (Data/effects.csv 한 줄)
+struct EffectData
+{
+	bool ring = false;            // true: 바닥을 따라 둥글게 퍼짐, false: 사방으로 터짐
+	int count = 0;
+	float speedMin = 1.f, speedMax = 1.f;
+	float lifeMin = 0.5f, lifeMax = 0.5f;
+	float sizeStart = 0.1f, sizeEnd = 0.f;
+	glm::vec4 colorStart = glm::vec4(1.f), colorEnd = glm::vec4(1.f);
+	float gravity = 0.f;
+};
+
+struct Particle
+{
+	glm::vec3 position, velocity;
+	float age = 0.f, life = 1.f;
+	int effect = 0;               // EventType 번호 = effects 번호
+};
+
 struct Renderer
 {
 	GLuint program = 0;
@@ -29,6 +48,11 @@ struct Renderer
 	GLuint startCard = 0, exitCard = 0, retryCard = 0, titleCard = 0;
 	GLuint digits = 0, chipIcon = 0, booster = 0, endTurn = 0, logo = 0, victory = 0, defeat = 0;
 
+	// 파티클: EventType 순서(Summon, Hit, Death)로 수치를 둔다
+	std::vector<EffectData> effects;
+	std::vector<Particle> particles;
+	GLuint dotTexture = 0;  // 가운데가 진하고 가장자리가 투명한 점
+
 	// UI 입력 상태 (main이 채운다)
 	glm::vec2 mouse = glm::vec2(0.f);  // 창 좌표
 	int dragCard = -1;                 // 끌고 있는 손패 카드 번호 (-1이면 없음)
@@ -37,12 +61,13 @@ struct Renderer
 void RendererInit(Renderer& renderer);
 glm::mat4 ViewMatrix(const Camera& camera);
 glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect);
-void RendererUpdate(Renderer& renderer, float dt);  // 카메라 자동 회전 같은 연출 쪽 업데이트
+void RendererUpdate(Renderer& renderer, const Game& game, float dt);  // 게임 이벤트로 파티클을 만들고 움직인다
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
 void RenderBoard(const Renderer& renderer, const Game& game);
 void RenderUnits(const Renderer& renderer, const Game& game);
 void RenderMobs(const Renderer& renderer, const Game& game);
-void RenderPreview(const Renderer& renderer, const Game& game);  // 끌고 있는 유닛 카드의 반투명 말과 사거리 원
+void RenderPreview(const Renderer& renderer, const Game& game);
+void RenderParticles(const Renderer& renderer);  // 끌고 있는 유닛 카드의 반투명 말과 사거리 원
 
 // 화면 UI. 그리기와 클릭 판정이 같은 위치를 쓰도록 배치 함수를 둔다 (width, height = 창 크기).
 bool Contains(const Rect& r, glm::vec2 p);
