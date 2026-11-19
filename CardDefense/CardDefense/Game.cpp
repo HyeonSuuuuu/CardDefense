@@ -217,6 +217,12 @@ void GameUpdate(Game& game, float dt)
 	for (Mob& m : game.mobs) {
 		m.hitTimer = std::max(0.f, m.hitTimer - dt);
 	}
+	for (int k = (int)game.dying.size() - 1; k >= 0; --k) {
+		game.dying[k].dieTimer += dt;
+		if (game.dying[k].dieTimer >= DieTime) {
+			game.dying.erase(game.dying.begin() + k);
+		}
+	}
 
 	switch (game.phase) {
 	case Phase::Title:
@@ -438,6 +444,7 @@ void UpdateUnits(Game& game, float dt)
 		if (game.mobs[k].hp <= 0.f) {
 			game.chips += gameData.mobs[game.mobs[k].type].chips;
 			++game.kills;
+			game.dying.push_back(game.mobs[k]);
 			game.mobs.erase(game.mobs.begin() + k);
 		}
 	}

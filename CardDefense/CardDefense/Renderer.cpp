@@ -89,6 +89,8 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, 1.f, 1.f));
 	SetInt(renderer.program, "uUseTexture", 0);
 	SetInt(renderer.program, "uLighting", 1);
+	SetInt(renderer.program, "uToon", renderer.toon ? 1 : 0);
+	SetFloat(renderer.program, "uDissolve", 0.f);
 
 	RenderBoard(renderer, game);
 	RenderUnits(renderer, game);
@@ -255,6 +257,16 @@ void RenderMobs(const Renderer& renderer, const Game& game)
 		Draw(renderer.program, renderer.cube, bar);
 		SetInt(renderer.program, "uLighting", 1);
 	}
+
+	// 죽은 몹: 제자리에서 fBm 노이즈 모양으로 타들어가며 사라진다
+	for (const Mob& m : game.dying) {
+		int type = m.type < 4 ? m.type : 0;
+		glm::vec3 ground = PathPosition(m.pathPos);
+		glm::vec3 forward = PathPosition(std::floor(m.pathPos) + 1.f) - PathPosition(std::floor(m.pathPos));
+		SetFloat(renderer.program, "uDissolve", std::max(0.01f, m.dieTimer / DieTime));
+		DrawFigure(renderer, renderer.mobModels[m.type], ground, FacingYaw(forward), heights[type], colors[type]);
+	}
+	SetFloat(renderer.program, "uDissolve", 0.f);
 }
 
 void RenderPreview(const Renderer& renderer, const Game& game)

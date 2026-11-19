@@ -102,7 +102,10 @@ struct Mob
 	float maxHp = 0.f;
 	float pathPos = 0.f;   // 출발한 뒤 간 거리(칸). 한 바퀴를 넘어도 계속 커진다 → 클수록 앞선 몹
 	float hitTimer = 0.f;  // 맞은 뒤 남은 번쩍임 시간 (연출용)
+	float dieTimer = 0.f;  // 죽은 뒤 지난 시간 (연출용, dying 목록에서만 씀)
 };
+
+constexpr float DieTime = 0.7f;  // 죽은 몹이 사라지는 연출 시간(초)
 
 struct Game
 {
@@ -118,6 +121,7 @@ struct Game
 	std::vector<int> hand;   // 손패 카드 (위 카드 번호)
 	std::vector<Unit> units;
 	std::vector<Mob> mobs;
+	std::vector<Mob> dying;      // 죽어서 사라지는 중인 몹 (연출용, 판정에는 안 씀)
 	std::vector<int> spawnQueue; // 이번 라운드에 나올 몹 종류 순서
 	int spawnedCount = 0;    // 이번 라운드에 나온 몹 수
 };

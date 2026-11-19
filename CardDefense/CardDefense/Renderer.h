@@ -18,6 +18,7 @@ struct Renderer
 	std::vector<Model> mobModels;   // mobs.csv 순서
 	Camera camera;
 	bool isOrtho = false;
+	bool toon = true;              // 툰 셰이딩 (T 키로 퐁과 바꿔 보기)
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
 
 	// 판 텍스처

@@ -24,6 +24,7 @@ void CharCallback(GLFWwindow* window, unsigned int c)
 	case '-': ZoomCamera(0.5f); break;
 	case 'r': case 'R': renderer.camera = Camera{}; break;
 	case 'p': renderer.isOrtho = !renderer.isOrtho; break;
+	case 't': case 'T': renderer.toon = !renderer.toon; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}
 }
