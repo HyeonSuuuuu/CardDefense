@@ -184,8 +184,10 @@ void RenderMobs(const Renderer& renderer, const Game& game)
 		// 체력 막대: 남은 비율만큼 왼쪽부터 채운다
 		float ratio = glm::clamp(m.hp / m.maxHp, 0.f, 1.f);
 		const float barWidth = 0.5f;
-		glm::vec3 barLeft = base + glm::vec3(-barWidth * 0.5f, height + 0.12f, 0.f);
-		glm::mat4 bar = glm::translate(glm::mat4(1.f), barLeft + glm::vec3(barWidth * ratio * 0.5f, 0.f, 0.f));
+		// 카메라가 돈 만큼 막대도 돌려서 항상 화면에 가로로 보이게 한다.
+		glm::mat4 bar = glm::translate(glm::mat4(1.f), base + glm::vec3(0.f, height + 0.12f, 0.f));
+		bar = glm::rotate(bar, glm::radians(renderer.camera.yaw), glm::vec3(0.f, 1.f, 0.f));
+		bar = glm::translate(bar, glm::vec3(-barWidth * 0.5f + barWidth * ratio * 0.5f, 0.f, 0.f));
 		bar = glm::scale(bar, glm::vec3(barWidth * ratio, 0.05f, 0.05f));
 		SetInt(renderer.program, "uLighting", 0);
 		SetVec3(renderer.program, "uColor", glm::vec3(0.9f, 0.2f, 0.2f));

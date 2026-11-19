@@ -2,22 +2,49 @@
 #include "Renderer.h"
 #include "Util/Picking.h"
 #include <algorithm>
-#include <algorithm>
 
 Game game;
 Renderer renderer;
 
-void CharCallback(GLFWwindow* window, unsigned int c)
+// 카메라가 움직일 수 있는 범위. 판이 화면을 벗어나거나 옆·아래에서 보이지 않게 막는다.
+constexpr float MinYaw = -45.f, MaxYaw = 45.f;
+constexpr float MinPitch = 30.f, MaxPitch = 75.f;
+constexpr float MinDistance = 6.f, MaxDistance = 14.f;
+
+void ZoomCamera(float amount)
 {
 	Camera& camera = renderer.camera;
+	camera.distance = glm::clamp(camera.distance + amount, MinDistance, MaxDistance);
+}
+
+void CharCallback(GLFWwindow* window, unsigned int c)
+{
 	switch (c) {
-	case '+': camera.distance = glm::clamp(camera.distance - 0.5f, 1.f, 20.f); break;
-	case '-': camera.distance = glm::clamp(camera.distance + 0.5f, 1.f, 20.f); break;
-	case 'o': camera.yawDir = camera.yawDir != 1.f ? 1.f : 0.f; break;
+	case '+': ZoomCamera(-0.5f); break;
+	case '-': ZoomCamera(0.5f); break;
+	case 'r': case 'R': renderer.camera = Camera{}; break;
 	case 'p': renderer.isOrtho = !renderer.isOrtho; break;
-	case 's': camera = Camera{}; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}
+}
+
+// 휠: 앞으로 굴리면 가까이
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	ZoomCamera(-(float)yoffset * 0.7f);
+}
+
+// 오른쪽 버튼을 누른 채 끌면 카메라 회전. 왼쪽 버튼은 카드·말 조작에 쓴다.
+double lastCursorX = 0.0, lastCursorY = 0.0;
+void CursorPosCallback(GLFWwindow* window, double x, double y)
+{
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		Camera& camera = renderer.camera;
+		camera.yaw = glm::clamp(camera.yaw - (float)(x - lastCursorX) * 0.3f, MinYaw, MaxYaw);
+		camera.pitch = glm::clamp(camera.pitch + (float)(y - lastCursorY) * 0.2f, MinPitch, MaxPitch);
+	}
+	lastCursorX = x;
+	lastCursorY = y;
 }
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -160,6 +187,8 @@ int main()
 	glfwSetCharCallback(window, CharCallback);
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetMouseButtonCallback(window, MouseButtonCallback);
+	glfwSetScrollCallback(window, ScrollCallback);
+	glfwSetCursorPosCallback(window, CursorPosCallback);
 
 	float last = (float)glfwGetTime();
 	float titleTimer = 0.f;
