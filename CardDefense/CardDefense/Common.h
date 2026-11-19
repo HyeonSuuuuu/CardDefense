@@ -39,4 +39,5 @@ Mesh CreateCube();
 void SetMat4(GLuint program, const char* name, const glm::mat4& m);
 void SetVec3(GLuint program, const char* name, const glm::vec3& v);
 void SetInt(GLuint program, const char* name, int v);
+void SetFloat(GLuint program, const char* name, float v);
 void Draw(GLuint program, const Mesh& m, const glm::mat4& model);

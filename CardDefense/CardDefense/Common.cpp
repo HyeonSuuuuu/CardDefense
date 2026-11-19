@@ -135,6 +135,11 @@ void SetInt(GLuint program, const char* name, int v)
 	glUniform1i(glGetUniformLocation(program, name), v);
 }
 
+void SetFloat(GLuint program, const char* name, float v)
+{
+	glUniform1f(glGetUniformLocation(program, name), v);
+}
+
 void Draw(GLuint program, const Mesh& m, const glm::mat4& model)
 {
 	SetMat4(program, "uModel", model);

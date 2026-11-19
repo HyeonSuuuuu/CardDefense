@@ -1,5 +1,6 @@
 #pragma once
 #include "Game.h"
+#include "Util/Obj.h"
 
 // 렌더링에 필요한 GPU 리소스와 카메라. 게임 로직은 바꾸지 않는다.
 
@@ -7,6 +8,8 @@ struct Renderer
 {
 	GLuint program = 0;
 	Mesh axes, cube;
+	std::vector<Model> unitModels;  // units.csv 순서
+	std::vector<Model> mobModels;   // mobs.csv 순서
 	Camera camera;
 	bool isOrtho = false;
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
