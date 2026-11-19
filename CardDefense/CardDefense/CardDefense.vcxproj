@@ -202,6 +202,8 @@
       <DataFiles Include="$(ProjectDir)Data\**\*" />
       <ObjFiles Include="$(ProjectDir)..\..\assets\obj\**\*" />
       <TextureFiles Include="$(ProjectDir)..\..\assets\textures\**\*" />
+      <CardFiles Include="$(ProjectDir)..\..\assets\cards\card_*.png" />
+      <UiFiles Include="$(ProjectDir)..\..\assets\ui\*.png" />
       <DllFiles Include="$(ProjectDir)..\..\external\bin\*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
@@ -209,5 +211,7 @@
     <Copy SourceFiles="@(DataFiles)" DestinationFolder="$(OutDir)Data\%(RecursiveDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(ObjFiles)" DestinationFolder="$(OutDir)assets\obj\%(RecursiveDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(TextureFiles)" DestinationFolder="$(OutDir)assets\textures\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(CardFiles)" DestinationFolder="$(OutDir)assets\cards" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(UiFiles)" DestinationFolder="$(OutDir)assets\ui" SkipUnchangedFiles="true" />
   </Target>
 </Project>

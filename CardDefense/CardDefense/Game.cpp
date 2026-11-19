@@ -137,6 +137,7 @@ bool LoadGameData()
 		else if (key == "spawn_duration") d.spawnDuration = std::stof(value);
 		else if (key == "clear_bonus_base") d.clearBonusBase = std::stoi(value);
 		else if (key == "clear_bonus_per_round") d.clearBonusPerRound = std::stoi(value);
+		else if (key == "sell_chips") d.sellChips = std::stoi(value);
 		else if (key == "starter_units") {
 			std::stringstream ss(value);
 			std::string id;
@@ -186,6 +187,16 @@ bool LoadGameData()
 void GameInit(Game& game)
 {
 	game = Game{};
+	game.hand = { CardStart, CardExit };
+}
+
+// 결과 화면으로: 손패를 Retry·Title 카드로 바꾼다
+static void EnterResult(Game& game, bool won)
+{
+	game.phase = Phase::Result;
+	game.won = won;
+	game.timer = 0.f;
+	game.hand = { CardRetry, CardTitle };
 }
 
 void StartGame(Game& game)
@@ -249,15 +260,23 @@ bool BuyPack(Game& game)
 	return true;
 }
 
-bool PlaceUnit(Game& game, int handIndex, int i, int j)
+bool CanPlayCard(const Game& game, int handIndex, int i, int j)
 {
-	if (game.phase != Phase::Prepare && game.phase != Phase::Battle) {
-		return false;
-	}
 	if (handIndex < 0 || handIndex >= (int)game.hand.size()) {
 		return false;
 	}
-	if (i < 0 || i >= BoardSize || j < 0 || j >= BoardSize || IsPathTile(i, j)) {
+	if (i < 0 || i >= BoardSize || j < 0 || j >= BoardSize) {
+		return false;
+	}
+	if (game.hand[handIndex] < 0) {
+		return true;  // 화면 전환 카드는 판 어디에 놓아도 된다
+	}
+	return (game.phase == Phase::Prepare || game.phase == Phase::Battle) && !IsPathTile(i, j);
+}
+
+bool PlaceUnit(Game& game, int handIndex, int i, int j)
+{
+	if (!CanPlayCard(game, handIndex, i, j) || game.hand[handIndex] < 0) {
 		return false;
 	}
 
@@ -275,6 +294,40 @@ bool PlaceUnit(Game& game, int handIndex, int i, int j)
 	u.j = j;
 	u.attackTimer = 10.f;  // 처음엔 공격 연출이 보이지 않게
 	game.units.push_back(u);
+	game.hand.erase(game.hand.begin() + handIndex);
+	return true;
+}
+
+bool PlayCard(Game& game, int handIndex, int i, int j)
+{
+	if (!CanPlayCard(game, handIndex, i, j)) {
+		return false;
+	}
+	switch (game.hand[handIndex]) {
+	case CardStart:
+	case CardRetry:
+		StartGame(game);
+		return true;
+	case CardTitle:
+		GameInit(game);
+		return true;
+	case CardExit:
+		game.quit = true;
+		return true;
+	default:
+		return PlaceUnit(game, handIndex, i, j);
+	}
+}
+
+bool SellCard(Game& game, int handIndex)
+{
+	if (game.phase != Phase::Prepare && game.phase != Phase::Battle) {
+		return false;
+	}
+	if (handIndex < 0 || handIndex >= (int)game.hand.size() || game.hand[handIndex] < 0) {
+		return false;
+	}
+	game.chips += gameData.sellChips;
 	game.hand.erase(game.hand.begin() + handIndex);
 	return true;
 }
@@ -397,8 +450,7 @@ void CheckRoundEnd(Game& game)
 		game.chips += gameData.clearBonusBase + gameData.clearBonusPerRound * game.round;
 		game.timer = 0.f;
 		if (game.round >= MaxRound) {
-			game.phase = Phase::Result;
-			game.won = true;
+			EnterResult(game, true);
 		}
 		else {
 			++game.round;
@@ -406,8 +458,6 @@ void CheckRoundEnd(Game& game)
 		}
 	}
 	else if (game.timer >= gameData.roundTimeLimit) {
-		game.phase = Phase::Result;
-		game.won = false;
-		game.timer = 0.f;
+		EnterResult(game, false);
 	}
 }

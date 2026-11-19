@@ -16,6 +16,12 @@ constexpr int PathLength = (BoardSize - 1) * 4;  // 바깥 테두리 칸 수 = 2
 constexpr int MaxRound = 10;
 constexpr int MaxHand = 6;
 
+// 손패 카드 번호: 0 이상은 유닛 종류(units.csv 행 번호), 음수는 화면 전환 카드
+constexpr int CardStart = -1;  // 타이틀: 판에 놓으면 게임 시작
+constexpr int CardExit = -2;   // 타이틀: 판에 놓으면 프로그램 종료
+constexpr int CardRetry = -3;  // 결과: 다시 하기
+constexpr int CardTitle = -4;  // 결과: 타이틀로
+
 bool IsPathTile(int i, int j);         // 바깥 테두리면 경로 타일
 glm::vec3 TileCenter(int i, int j);    // 타일 중심의 월드 좌표 (보드 중심 = 원점, y = 0)
 bool WorldToTile(glm::vec3 p, int& i, int& j); // 월드 좌표가 놓인 타일. 판 밖이면 false
@@ -67,6 +73,7 @@ struct GameData
 	int clearBonusBase = 3;
 	int clearBonusPerRound = 1;
 	int boosterPrice = 5;
+	int sellChips = 1;  // 손패 카드를 팩에 끌어다 팔 때 받는 칩
 };
 
 extern GameData gameData;
@@ -106,8 +113,9 @@ struct Game
 	int chips = 0;
 	bool won = false;   // Result에서 승패 표시용
 	int kills = 0;      // 결과 통계
+	bool quit = false;  // Exit 카드를 놓으면 true (main이 창을 닫는다)
 
-	std::vector<int> hand;   // 손패 카드 (유닛 종류 번호)
+	std::vector<int> hand;   // 손패 카드 (위 카드 번호)
 	std::vector<Unit> units;
 	std::vector<Mob> mobs;
 	std::vector<int> spawnQueue; // 이번 라운드에 나올 몹 종류 순서
@@ -125,7 +133,10 @@ void GameUpdate(Game& game, float dt);
 
 // 정비 페이즈 조작 (말 놓기는 전투 중에도 된다)
 bool BuyPack(Game& game);                                // 칩으로 팩을 사서 손패에 카드 추가, 못 사면 false
-bool PlaceUnit(Game& game, int handIndex, int i, int j); // 손패 카드를 타일에 놓기, 못 놓으면 false
+bool PlaceUnit(Game& game, int handIndex, int i, int j); // 손패 유닛 카드를 타일에 놓기, 못 놓으면 false
+bool CanPlayCard(const Game& game, int handIndex, int i, int j); // 이 칸에 이 카드를 놓을 수 있나
+bool PlayCard(Game& game, int handIndex, int i, int j);  // 카드를 판에 놓기 (유닛 배치 또는 화면 전환)
+bool SellCard(Game& game, int handIndex);                // 유닛 카드를 팔아 칩 받기
 void EndTurn(Game& game);                                // 정비 → 전투
 
 // 전투 페이즈 (GameUpdate에서 호출)

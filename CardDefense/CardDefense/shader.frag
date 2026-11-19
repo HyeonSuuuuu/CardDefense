@@ -9,12 +9,16 @@ uniform int uLighting;       // 1이면 퐁 조명, 0이면 색 그대로 (축·
 uniform vec3 uLightDir;      // 표면에서 빛 쪽으로 가는 방향 (정규화)
 uniform vec3 uViewPos;       // 카메라 월드 좌표
 uniform float uFlash;        // 0~1, 맞았을 때 흰색으로 섞는 정도
+uniform float uAlpha;        // 불투명도 (텍스처 알파와 곱함)
 out vec4 fragColor;
 void main()
 {
 	vec3 color = uColor;
+	float alpha = uAlpha;
 	if (uUseTexture == 1) {
-		color *= texture(uTexture, vUV).rgb;
+		vec4 texel = texture(uTexture, vUV);
+		color *= texel.rgb;
+		alpha *= texel.a;
 	}
 
 	if (uLighting == 1) {
@@ -31,5 +35,5 @@ void main()
 	}
 
 	color = mix(color, vec3(1.0), uFlash);
-	fragColor = vec4(color, 1.0);
+	fragColor = vec4(color, alpha);
 }

@@ -120,6 +120,24 @@ Mesh CreateCube()
 	return CreateMesh(v, i, GL_TRIANGLES);
 }
 
+Mesh CreateQuad()
+{
+	// 화면 좌표는 y가 아래로 커지고, 텍스처는 위아래를 뒤집어 읽었으므로(v = 0이 그림 아래)
+	// 위쪽(y = 0) 꼭짓점에 v = 1을 준다.
+	std::vector<float> v = {
+		0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 1.f,
+		1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f,
+		1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f,
+		0.f, 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
+	};
+	return CreateMesh(v, { 0, 1, 2, 0, 2, 3 }, GL_TRIANGLES);
+}
+
+void SetVec4(GLuint program, const char* name, const glm::vec4& v)
+{
+	glUniform4fv(glGetUniformLocation(program, name), 1, glm::value_ptr(v));
+}
+
 void SetMat4(GLuint program, const char* name, const glm::mat4& m)
 {
 	glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(m));
