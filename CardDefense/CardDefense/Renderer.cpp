@@ -207,6 +207,7 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	SetInt(renderer.program, "uLighting", 1);
 	SetInt(renderer.program, "uToon", renderer.toon ? 1 : 0);
 	SetFloat(renderer.program, "uDissolve", 0.f);
+	SetFloat(renderer.program, "uOutline", 0.f);
 
 	RenderBoard(renderer, game);
 	RenderUnits(renderer, game);
@@ -279,13 +280,30 @@ static float FacingYaw(glm::vec3 dir)
 }
 
 // 모델이 있으면 모델(받침 바닥 = 원점, 높이 1)을, 없으면 큐브를 그린다.
-static void DrawFigure(const Renderer& renderer, const Model& model, glm::vec3 base, float yaw, float height, glm::vec3 fallbackColor)
+static void DrawFigure(const Renderer& renderer, const Model& model, glm::vec3 base, float yaw, float height, glm::vec3 fallbackColor, bool outline = true)
 {
 	glm::mat4 m = glm::translate(glm::mat4(1.f), base);
 	m = glm::rotate(m, yaw, glm::vec3(0.f, 1.f, 0.f));
 	if (model.mesh.vao) {
+		glm::mat4 transform = glm::scale(m, glm::vec3(height));
+
+		// 툰 외곽선: 법선 방향으로 부풀린 모델의 뒷면만 어둡게 그린다.
+		// 앞면은 잘라 내므로 원래 모델 둘레로 삐져나온 뒷면이 테두리처럼 보인다.
+		if (renderer.toon && outline) {
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+			SetFloat(renderer.program, "uOutline", 0.018f);
+			SetInt(renderer.program, "uLighting", 0);
+			SetInt(renderer.program, "uUseTexture", 0);
+			SetVec3(renderer.program, "uColor", glm::vec3(0.16f, 0.12f, 0.12f));
+			Draw(renderer.program, model.mesh, transform);
+			SetFloat(renderer.program, "uOutline", 0.f);
+			SetInt(renderer.program, "uLighting", 1);
+			glDisable(GL_CULL_FACE);
+		}
+
 		SetVec3(renderer.program, "uColor", glm::vec3(1.f));
-		DrawModel(renderer.program, model, glm::scale(m, glm::vec3(height)));
+		DrawModel(renderer.program, model, transform);
 	}
 	else {
 		m = glm::translate(m, glm::vec3(0.f, height * 0.5f, 0.f));
@@ -414,7 +432,7 @@ void RenderPreview(const Renderer& renderer, const Game& game)
 	const float heights[] = { 0.7f, 0.8f, 0.95f };
 	SetInt(renderer.program, "uLighting", 1);
 	SetFloat(renderer.program, "uAlpha", 0.5f);
-	DrawFigure(renderer, renderer.unitModels[card], center, 0.f, heights[ud.tier], UnitColor(ud));
+	DrawFigure(renderer, renderer.unitModels[card], center, 0.f, heights[ud.tier], UnitColor(ud), false);
 
 	SetFloat(renderer.program, "uAlpha", 1.f);
 	glDepthMask(GL_TRUE);
