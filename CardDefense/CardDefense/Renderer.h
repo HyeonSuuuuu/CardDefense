@@ -10,6 +10,7 @@ struct Renderer
 	Camera camera;
 	bool isOrtho = false;
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
+	int selectedHand = 0;          // 놓을 손패 카드 번호 (임시: 숫자 키로 고름)
 };
 
 void RendererInit(Renderer& renderer);
