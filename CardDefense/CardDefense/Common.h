@@ -36,6 +36,8 @@ GLuint CreateProgram(const char* vertexPath, const char* fragmentPath);
 Mesh CreateMesh(const std::vector<float>& vertices, const std::vector<unsigned>& indices, GLenum mode);
 Mesh CreateAxes();
 Mesh CreateCube();
+Mesh CreateDisc(int segments);    // 바닥(XZ 평면)의 반지름 1 원판, 법선 +Y
+Mesh CreateCircle(int segments);  // 같은 원의 테두리 선
 Mesh CreateQuad();  // 화면 UI용 사각형: (0,0) ~ (1,1), y는 아래로 증가 (화면 좌표와 같은 방향)
 void SetMat4(GLuint program, const char* name, const glm::mat4& m);
 void SetVec3(GLuint program, const char* name, const glm::vec3& v);

@@ -8,6 +8,8 @@ void RendererInit(Renderer& renderer)
 	renderer.axes = CreateAxes();
 	renderer.cube = CreateCube();
 	renderer.quad = CreateQuad();
+	renderer.disc = CreateDisc(48);
+	renderer.circle = CreateCircle(48);
 
 	// 모델 이름 = 수치 CSV의 id (assets/obj/<id>.obj). 못 읽으면 큐브로 그린다.
 	for (const UnitData& ud : gameData.units) {
@@ -86,6 +88,7 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	RenderBoard(renderer, game);
 	RenderUnits(renderer, game);
 	RenderMobs(renderer, game);
+	RenderPreview(renderer, game);  // 반투명이라 불투명한 것을 다 그린 뒤에
 }
 
 void RenderBoard(const Renderer& renderer, const Game& game)
@@ -217,6 +220,41 @@ void RenderMobs(const Renderer& renderer, const Game& game)
 		Draw(renderer.program, renderer.cube, bar);
 		SetInt(renderer.program, "uLighting", 1);
 	}
+}
+
+void RenderPreview(const Renderer& renderer, const Game& game)
+{
+	int card = renderer.dragCard >= 0 && renderer.dragCard < (int)game.hand.size() ? game.hand[renderer.dragCard] : -1;
+	if (card < 0 || !CanPlayCard(game, renderer.dragCard, renderer.hoverI, renderer.hoverJ)) {
+		return;
+	}
+	const UnitData& ud = gameData.units[card];
+	glm::vec3 center = TileCenter(renderer.hoverI, renderer.hoverJ);
+
+	// 반투명: 뒤에 있는 것과 섞어 그리고, 깊이는 쓰지 않아 뒤쪽 물체를 가리지 않게 한다.
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	SetInt(renderer.program, "uLighting", 0);
+
+	// 사거리 원: 옅은 원판 + 진한 테두리. 칸 윗면(y = 0)과 겹쳐 깜빡이지 않게 조금 띄운다
+	glm::mat4 ring = glm::translate(glm::mat4(1.f), center + glm::vec3(0.f, 0.02f, 0.f));
+	ring = glm::scale(ring, glm::vec3(ud.range, 1.f, ud.range));
+	SetVec3(renderer.program, "uColor", glm::vec3(1.f, 0.94f, 0.81f));
+	SetFloat(renderer.program, "uAlpha", 0.22f);
+	Draw(renderer.program, renderer.disc, ring);
+	SetFloat(renderer.program, "uAlpha", 0.9f);
+	Draw(renderer.program, renderer.circle, ring);
+
+	// 반투명 말 (같은 칸에 말이 있으면 그 말과 바뀐다는 것을 보여준다)
+	const float heights[] = { 0.7f, 0.8f, 0.95f };
+	SetInt(renderer.program, "uLighting", 1);
+	SetFloat(renderer.program, "uAlpha", 0.5f);
+	DrawFigure(renderer, renderer.unitModels[card], center, 0.f, heights[ud.tier], UnitColor(ud));
+
+	SetFloat(renderer.program, "uAlpha", 1.f);
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
 }
 
 // ========================================================================
@@ -397,14 +435,14 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		DrawRect(renderer, CardTexture(renderer, game.hand[k]), r, white, 1.f);
 	}
 	if (renderer.dragCard >= 0 && renderer.dragCard < count) {
+		// 판 위를 가리키면 카드를 작게 줄여 커서 오른쪽 위로 비켜서, 놓을 칸과 미리보기 말이 보이게 한다
+		bool overBoard = renderer.hoverI >= 0;
 		Rect r = HandCardRect(0, 1, width, height);
-		r.w *= 0.8f;
-		r.h *= 0.8f;
-		r.x = renderer.mouse.x - r.w * 0.5f;
-		r.y = renderer.mouse.y - r.h * 0.5f;
-		// 판 위를 가리키면 반투명하게 해서 놓을 칸이 보이게 한다
-		float alpha = renderer.hoverI >= 0 ? 0.55f : 1.f;
-		DrawRect(renderer, CardTexture(renderer, game.hand[renderer.dragCard]), r, white, alpha);
+		r.w *= overBoard ? 0.45f : 0.8f;
+		r.h *= overBoard ? 0.45f : 0.8f;
+		r.x = renderer.mouse.x + (overBoard ? 18.f * s : -r.w * 0.5f);
+		r.y = renderer.mouse.y - (overBoard ? r.h + 12.f * s : r.h * 0.5f);
+		DrawRect(renderer, CardTexture(renderer, game.hand[renderer.dragCard]), r, white, overBoard ? 0.85f : 1.f);
 	}
 
 	SetFloat(renderer.program, "uAlpha", 1.f);

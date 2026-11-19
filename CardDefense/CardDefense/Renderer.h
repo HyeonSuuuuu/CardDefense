@@ -13,7 +13,7 @@ struct Rect
 struct Renderer
 {
 	GLuint program = 0;
-	Mesh axes, cube, quad;
+	Mesh axes, cube, quad, disc, circle;
 	std::vector<Model> unitModels;  // units.csv 순서
 	std::vector<Model> mobModels;   // mobs.csv 순서
 	Camera camera;
@@ -38,6 +38,7 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 void RenderBoard(const Renderer& renderer, const Game& game);
 void RenderUnits(const Renderer& renderer, const Game& game);
 void RenderMobs(const Renderer& renderer, const Game& game);
+void RenderPreview(const Renderer& renderer, const Game& game);  // 끌고 있는 유닛 카드의 반투명 말과 사거리 원
 
 // 화면 UI. 그리기와 클릭 판정이 같은 위치를 쓰도록 배치 함수를 둔다 (width, height = 창 크기).
 bool Contains(const Rect& r, glm::vec2 p);

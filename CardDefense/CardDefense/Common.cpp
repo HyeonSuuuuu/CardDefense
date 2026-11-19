@@ -1,4 +1,5 @@
 #include "Common.h"
+#include <cmath>
 #include <fstream>
 #include <sstream>
 
@@ -118,6 +119,32 @@ Mesh CreateCube()
 		i.insert(i.end(), { base, base + 1, base + 2, base, base + 2, base + 3 });
 	}
 	return CreateMesh(v, i, GL_TRIANGLES);
+}
+
+Mesh CreateDisc(int segments)
+{
+	// 가운데 점 하나 + 테두리 점들, 삼각형을 부채꼴로 잇는다
+	std::vector<float> v = { 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.5f, 0.5f };
+	std::vector<unsigned> idx;
+	for (int k = 0; k <= segments; ++k) {
+		float a = 6.2831853f * k / segments;
+		float x = std::cos(a), z = std::sin(a);
+		v.insert(v.end(), { x, 0.f, z, 0.f, 1.f, 0.f, 0.5f + 0.5f * x, 0.5f + 0.5f * z });
+		if (k > 0) {
+			idx.insert(idx.end(), { 0u, (unsigned)k + 1, (unsigned)k });
+		}
+	}
+	return CreateMesh(v, idx, GL_TRIANGLES);
+}
+
+Mesh CreateCircle(int segments)
+{
+	std::vector<float> v;
+	for (int k = 0; k < segments; ++k) {
+		float a = 6.2831853f * k / segments;
+		v.insert(v.end(), { std::cos(a), 0.f, std::sin(a), 0.f, 1.f, 0.f, 0.f, 0.f });
+	}
+	return CreateMesh(v, {}, GL_LINE_LOOP);
 }
 
 Mesh CreateQuad()
