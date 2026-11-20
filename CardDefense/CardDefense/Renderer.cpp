@@ -148,6 +148,8 @@ void RendererInit(Renderer& renderer)
 		renderer.relicIcons.push_back(LoadTexture(("assets/ui/relic_" + file + ".png").c_str()));
 	}
 	renderer.cardBack = LoadTexture("assets/cards/card_back.png");
+	renderer.promoteCard = LoadTexture("assets/cards/card_promote.png");
+	renderer.goldPack = LoadTexture("assets/ui/pack_gold.png");
 	renderer.startCard = LoadTexture("assets/cards/card_sys_start.png");
 	renderer.exitCard = LoadTexture("assets/cards/card_sys_exit.png");
 	renderer.retryCard = LoadTexture("assets/cards/card_sys_retry.png");
@@ -173,6 +175,7 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 			anim.handIndex = event.type == EventType::PackCard ? event.value : -1;
 			anim.relic = event.type == EventType::PackRelic ? event.value : -1;
 			anim.delay = 0.25f * packCount++;
+			anim.gold = event.position.x > 0.5f;
 			renderer.packAnims.push_back(anim);
 			renderer.packHandSize = (int)game.hand.size();
 			continue;
@@ -559,6 +562,14 @@ void RenderPreview(const Renderer& renderer, const Game& game)
 		glDisable(GL_BLEND);
 		return;
 	}
+	// 승격: 그 칸 말이 바뀔 다음 등급 말과 사거리를 보여 준다 (CanPlayCard가 말이 있는지 확인했다)
+	if (card == CardPromote) {
+		for (const Unit& u : game.units) {
+			if (u.i == renderer.hoverI && u.j == renderer.hoverJ) {
+				card = PromotedType(u.type);
+			}
+		}
+	}
 	const UnitData& ud = gameData.units[card];
 
 	// 사거리 원: 옅은 원판 + 진한 테두리. 칸 윗면(y = 0)과 겹쳐 깜빡이지 않게 조금 띄운다
@@ -673,6 +684,12 @@ Rect EndTurnRect(int width, int height)
 	return Rect{ width - 254.f * s, height - 110.f * s, 230.f * s, 80.f * s };
 }
 
+Rect GoldPackRect(int width, int height)
+{
+	float s = UiScale(height);
+	return Rect{ 24.f * s, height - 380.f * s, 120.f * s, 160.f * s };
+}
+
 Rect SpeedRect(int width, int height)
 {
 	float s = UiScale(height);
@@ -723,6 +740,7 @@ static GLuint CardTexture(const Renderer& renderer, int card)
 	case CardExit: return renderer.exitCard;
 	case CardRetry: return renderer.retryCard;
 	case CardTitle: return renderer.titleCard;
+	case CardPromote: return renderer.promoteCard;
 	default:
 		if (IsSpellCard(card)) {
 			return card - CardSpellBase < (int)renderer.spellCards.size() ? renderer.spellCards[card - CardSpellBase] : 0;
@@ -757,9 +775,9 @@ static Rect RelicSlotRect(const Game& game, int relic, float s)
 static void RenderPackAnims(const Renderer& renderer, const Game& game, int width, int height)
 {
 	float s = UiScale(height);
-	Rect pack = PackRect(width, height);
 	int count = (int)game.hand.size();
 	for (const Renderer::PackAnim& a : renderer.packAnims) {
+		Rect pack = a.gold ? GoldPackRect(width, height) : PackRect(width, height);
 		float t = (a.age - a.delay) / PackAnimTime;
 		if (t < 0.f) {
 			continue;
@@ -922,8 +940,17 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 
 	// 팩 구매(정비 중에만), 턴 종료 버튼
 	if (playing) {
+		// 골드 부스터: 승격 카드와 희귀 이상 말이 나오는 비싼 팩
+		Rect gold = GoldPackRect(width, height);
+		bool canBuyGold = CanBuyPack(game, true);
+		bool overGold = canBuyGold && renderer.dragCard < 0 && Contains(gold, renderer.mouse);
+		DrawRect(renderer, renderer.goldPack, gold, canBuyGold ? (overGold ? glm::vec3(1.1f) : white) : dim, 1.f);
+		DrawRect(renderer, renderer.chipIcon, Rect{ gold.x + gold.w * 0.5f - 40.f * s, gold.y + gold.h - 6.f * s, 28.f * s, 28.f * s }, white, 1.f);
+		snprintf(text, sizeof(text), "%d", gameData.goldPrice);
+		DrawNumber(renderer, text, gold.x + gold.w * 0.5f - 8.f * s, gold.y + gold.h - 8.f * s, 32.f * s, 0.f, white);
+
 		Rect pack = PackRect(width, height);
-		bool canBuy = game.phase == Phase::Prepare && game.chips >= gameData.boosterPrice && (int)game.hand.size() + PackCardCount(game) <= MaxHand;
+		bool canBuy = CanBuyPack(game, false);
 		bool sellTarget = renderer.dragCard >= 0 && renderer.dragCard < (int)game.hand.size() && game.hand[renderer.dragCard] >= 0;  // 카드를 끌어 오면 판다
 		glm::vec3 packColor = canBuy || sellTarget ? white : dim;
 		if (sellTarget && Contains(pack, renderer.mouse)) {

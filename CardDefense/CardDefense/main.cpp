@@ -87,6 +87,9 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 		else if (Contains(PackRect(width, height), mouse)) {
 			BuyPack(game);
 		}
+		else if (Contains(GoldPackRect(width, height), mouse)) {
+			BuyPack(game, true);
+		}
 		else if (Contains(EndTurnRect(width, height), mouse)) {
 			EndTurn(game);
 		}

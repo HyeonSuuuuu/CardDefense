@@ -167,6 +167,9 @@ bool LoadGameData()
 		if (row[CsvColumn(t, "id")] == "booster") {
 			d.boosterPrice = std::stoi(row[CsvColumn(t, "price")]);
 		}
+		else if (row[CsvColumn(t, "id")] == "gold_booster") {
+			d.goldPrice = std::stoi(row[CsvColumn(t, "price")]);
+		}
 	}
 
 	if (!LoadCsv("Data/spells.csv", t)) {
@@ -203,12 +206,12 @@ bool LoadGameData()
 		d.relics.push_back(r);
 	}
 
-	// 부스터 결과만 쓴다 (골드 부스터·승격은 넣지 않았다)
 	if (!LoadCsv("Data/pack_outcomes.csv", t)) {
 		return false;
 	}
 	for (auto& row : t.rows) {
-		if (row[CsvColumn(t, "pack")] != "booster") {
+		const std::string& pack = row[CsvColumn(t, "pack")];
+		if (pack != "booster" && pack != "gold_booster") {
 			continue;
 		}
 		const std::string& text = row[CsvColumn(t, "outcome")];
@@ -216,6 +219,9 @@ bool LoadGameData()
 		o.weight = std::stof(row[CsvColumn(t, "weight")]);
 		if (text == "relic") {
 			o.kind = OutcomeKind::Relic;
+		}
+		else if (text == "promote") {
+			o.kind = OutcomeKind::Promote;
 		}
 		else if (text.compare(0, 5, "unit:") == 0) {
 			o.kind = OutcomeKind::Unit;
@@ -231,7 +237,7 @@ bool LoadGameData()
 		else {
 			continue;
 		}
-		d.boosterOutcomes.push_back(o);
+		(pack == "booster" ? d.boosterOutcomes : d.goldOutcomes).push_back(o);
 	}
 
 	if ((int)d.rounds.size() < MaxRound) {
@@ -307,10 +313,9 @@ void GameUpdate(Game& game, float dt)
 //   플레이어 조작(팩 사기, 말 놓기, 턴 종료)
 // ========================================================================
 
-// 부스터 결과 가중치. 행운의 주사위 1개당 유닛 일반 등급 확률 5%p를 희귀·영웅에 나눠 준다
-static std::vector<float> BoosterWeights(const Game& game)
+// 팩 결과 가중치. 행운의 주사위 1개당 유닛 일반 등급 확률 5%p를 희귀·영웅에 나눠 준다 (일반이 없는 골드 부스터는 그대로)
+static std::vector<float> PackWeights(const Game& game, const std::vector<PackOutcome>& outcomes)
 {
-	const std::vector<PackOutcome>& outcomes = gameData.boosterOutcomes;
 	std::vector<float> w;
 	float unitTotal = 0.f, common = 0.f, higher = 0.f;
 	for (const PackOutcome& o : outcomes) {
@@ -351,28 +356,64 @@ int PackCardCount(const Game& game)
 	return 1 + RelicCount(game, RelicEffect::PackExtraCard);
 }
 
-bool BuyPack(Game& game)
+bool CanBuyPack(const Game& game, bool gold)
 {
-	int count = PackCardCount(game);
-	if (game.phase != Phase::Prepare || game.chips < gameData.boosterPrice || (int)game.hand.size() + count > MaxHand) {
+	int price = gold ? gameData.goldPrice : gameData.boosterPrice;
+	return game.phase == Phase::Prepare && game.chips >= price && (int)game.hand.size() + PackCardCount(game) <= MaxHand;
+}
+
+bool BuyPack(Game& game, bool gold)
+{
+	if (!CanBuyPack(game, gold)) {
 		return false;
 	}
-	game.chips -= gameData.boosterPrice;
+	game.chips -= gold ? gameData.goldPrice : gameData.boosterPrice;
 
-	std::vector<float> w = BoosterWeights(game);
+	const std::vector<PackOutcome>& outcomes = gold ? gameData.goldOutcomes : gameData.boosterOutcomes;
+	std::vector<float> w = PackWeights(game, outcomes);
 	std::discrete_distribution<int> pick(w.begin(), w.end());
-	for (int n = 0; n < count; ++n) {
-		const PackOutcome& o = gameData.boosterOutcomes[pick(rng)];
+	// 연출이 어느 팩에서 나올지: 이벤트 위치 x = 1이면 골드 부스터
+	glm::vec3 from(gold ? 1.f : 0.f, 0.f, 0.f);
+	for (int n = 0; n < PackCardCount(game); ++n) {
+		const PackOutcome& o = outcomes[pick(rng)];
 		if (o.kind == OutcomeKind::Relic) {
 			int relic = std::uniform_int_distribution<int>(0, (int)gameData.relics.size() - 1)(rng);
 			game.relics.push_back(relic);
-			game.events.push_back({ EventType::PackRelic, glm::vec3(0.f), relic });
+			game.events.push_back({ EventType::PackRelic, from, relic });
 			continue;
 		}
-		game.hand.push_back(o.kind == OutcomeKind::Unit ? RandomUnit(o.value) : CardSpellBase + o.value);
-		game.events.push_back({ EventType::PackCard, glm::vec3(0.f), (int)game.hand.size() - 1 });
+		int card = o.kind == OutcomeKind::Unit ? RandomUnit(o.value)
+			: o.kind == OutcomeKind::Spell ? CardSpellBase + o.value : CardPromote;
+		game.hand.push_back(card);
+		game.events.push_back({ EventType::PackCard, from, (int)game.hand.size() - 1 });
 	}
 	return true;
+}
+
+static Unit* UnitAt(Game& game, int i, int j)
+{
+	for (Unit& u : game.units) {
+		if (u.i == i && u.j == j) {
+			return &u;
+		}
+	}
+	return nullptr;
+}
+
+static const Unit* UnitAt(const Game& game, int i, int j)
+{
+	return UnitAt(const_cast<Game&>(game), i, j);
+}
+
+int PromotedType(int type)
+{
+	const UnitData& ud = gameData.units[type];
+	for (int k = 0; k < (int)gameData.units.size(); ++k) {
+		if (gameData.units[k].unitClass == ud.unitClass && gameData.units[k].tier == ud.tier + 1) {
+			return k;
+		}
+	}
+	return -1;
 }
 
 bool CanPlayCard(const Game& game, int handIndex, int i, int j)
@@ -393,7 +434,13 @@ bool CanPlayCard(const Game& game, int handIndex, int i, int j)
 		const SpellData& sp = gameData.spells[card - CardSpellBase];
 		return sp.target == SpellTarget::Point ? game.phase == Phase::Battle : playing;
 	}
-	return playing && !IsPathTile(i, j);
+	const Unit* there = UnitAt(game, i, j);
+	if (card == CardPromote) {
+		// 영웅이 아닌 말 위에만
+		return playing && there && PromotedType(there->type) >= 0;
+	}
+	// 같은 말 위에 같은 카드를 놓으면 바뀌는 것 없이 카드만 사라지므로 막는다
+	return playing && !IsPathTile(i, j) && !(there && there->type == card);
 }
 
 bool PlaceUnit(Game& game, int handIndex, int i, int j)
@@ -444,6 +491,14 @@ bool PlayCard(Game& game, int handIndex, int i, int j)
 	if (IsSpellCard(card)) {
 		game.hand.erase(game.hand.begin() + handIndex);
 		CastSpell(game, card - CardSpellBase, i, j);
+		return true;
+	}
+	if (card == CardPromote) {
+		Unit* u = UnitAt(game, i, j);
+		u->type = PromotedType(u->type);
+		u->cooldown = 0.f;
+		game.hand.erase(game.hand.begin() + handIndex);
+		game.events.push_back({ EventType::Summon, TileCenter(i, j) });
 		return true;
 	}
 	return PlaceUnit(game, handIndex, i, j);

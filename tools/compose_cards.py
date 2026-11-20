@@ -4,6 +4,7 @@
 - 유닛 9장: 등급별 틀(frame_common/rare/hero), 이름은 units.csv의 name
 - 화면 전환 4장: frame_system, Start/Exit/Retry/Title
 - 주문 3장: 등급별 틀, 이름은 spells.csv의 name
+- 승격 1장: 영웅 틀 (골드 부스터에서만 나옴)
 글꼴은 Windows의 맑은 고딕 굵게(malgunbd.ttf)를 쓴다.
 """
 import csv
@@ -92,6 +93,8 @@ def main():
     for row in csv.DictReader(lines):
         tier = int(row['rarity'])
         compose(TIER_FRAMES[tier], SPELL_ART[row['id']], row['name'], '주문 · ' + TIER_NAMES[tier], 'card_' + row['id'] + '.png')
+
+    compose('frame_hero.png', 'art_promote.png', '승격', '말 등급 +1', 'card_promote.png')
 
     for card_id, name, tag in SYSTEM_CARDS:
         compose('frame_system.png', 'art_' + card_id + '.png', name, tag, 'card_' + card_id + '.png')

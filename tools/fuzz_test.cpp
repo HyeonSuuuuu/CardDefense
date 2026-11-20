@@ -1,6 +1,6 @@
 // 퍼즈 테스트: 숨긴 창에서 무작위 조작(카드·팩·턴 종료·F키·끌기 상태·카메라)을 수십만 프레임 넣고 크래시와 상태 규칙 위반을 찾는다.
 // Debug 런타임(/MDd)으로 빌드해야 벡터 범위 검사가 켜진다. 실행: Debug 빌드 폴더에서 fuzz_test.exe [프레임 수], 시드는 환경 변수 FUZZ_SEED
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include <cstdio>
 #include <cmath>
 #include <random>
@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 		int hs = (int)game.hand.size();
 		snprintf(lastAction, sizeof(lastAction), "f%ld a%d phase%d hand%d drag%d hover%d,%d anims%zu", f, a, (int)game.phase, hs, renderer.dragCard, renderer.hoverI, renderer.hoverJ, renderer.packAnims.size());
 		if (getenv("FUZZ_LOG")) fprintf(stderr, "%s\n", lastAction);
-		if (a < 8) BuyPack(game);
+		if (a < 8) BuyPack(game, R(0, 2) == 0);
 		else if (a < 18) PlayCard(game, R(-1, hs), R(-1, BoardSize), R(-1, BoardSize));
 		else if (a < 21) SellCard(game, R(-1, hs));
 		else if (a < 23) EndTurn(game);
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 		for (auto& u : game.units) { if (IsPathTile(u.i, u.j)) Bad("unit on path", f); if (!tiles.insert(u.i * 10 + u.j).second) Bad("two units one tile", f);
 			if (u.type < 0 || u.type >= (int)gameData.units.size()) Bad("bad unit type", f); }
 		for (auto& m : game.mobs) if (std::isnan(m.hp) || m.hp <= 0.f) Bad("dead/NaN mob alive after update", f);
-		for (int c : game.hand) if (!(IsUnitCard(c) && c < (int)gameData.units.size()) && !(IsSpellCard(c) && c - CardSpellBase < (int)gameData.spells.size()) && !(c >= CardTitle && c <= CardStart)) Bad("bad card", f);
+		for (int c : game.hand) if (!(IsUnitCard(c) && c < (int)gameData.units.size()) && !(IsSpellCard(c) && c - CardSpellBase < (int)gameData.spells.size()) && !(c >= CardTitle && c <= CardStart) && c != CardPromote) Bad("bad card", f);
 		if (game.round < 1 || game.round > MaxRound) Bad("round out of range", f);
 		if (game.phase == Phase::Battle && game.timer > RoundTimeLimit(game) + 0.2f) Bad("battle past time limit", f);
 		if (renderer.particles.size() > 20000) Bad("particle leak", f);

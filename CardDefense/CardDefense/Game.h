@@ -23,8 +23,10 @@ constexpr int CardExit = -2;   // 타이틀: 판에 놓으면 프로그램 종�
 constexpr int CardRetry = -3;  // 결과: 다시 하기
 constexpr int CardTitle = -4;  // 결과: 타이틀로
 
+constexpr int CardPromote = 200;  // 승격: 말 위에 놓으면 같은 클래스의 다음 등급으로 (골드 부스터에서만)
+
 inline bool IsUnitCard(int card) { return card >= 0 && card < CardSpellBase; }
-inline bool IsSpellCard(int card) { return card >= CardSpellBase; }
+inline bool IsSpellCard(int card) { return card >= CardSpellBase && card < CardPromote; }
 
 bool IsPathTile(int i, int j);         // 바깥 테두리면 경로 타일
 glm::vec3 TileCenter(int i, int j);    // 타일 중심의 월드 좌표 (보드 중심 = 원점, y = 0)
@@ -91,7 +93,7 @@ struct RelicData
 };
 
 // 부스터 결과 한 줄 (pack_outcomes.csv)
-enum class OutcomeKind { Relic, Unit, Spell };
+enum class OutcomeKind { Relic, Unit, Spell, Promote };
 struct PackOutcome
 {
 	OutcomeKind kind = OutcomeKind::Unit;
@@ -108,6 +110,8 @@ struct GameData
 	std::vector<SpellData> spells;
 	std::vector<RelicData> relics;
 	std::vector<PackOutcome> boosterOutcomes;
+	std::vector<PackOutcome> goldOutcomes;  // 골드 부스터: 희귀 이상 말, 승격, 주문, 유물
+	int goldPrice = 15;
 	float roundTimeLimit = 30.f;
 	float spawnDuration = 15.f;
 	int clearBonusBase = 3;
@@ -189,7 +193,9 @@ void StartGame(Game& game);   // 새 판: 스타터 손패를 받고 1라운드 
 void GameUpdate(Game& game, float dt);
 
 // 정비 페이즈 조작 (말 놓기는 전투 중에도 된다)
-bool BuyPack(Game& game);                                // 칩으로 팩을 사서 손패에 카드 추가, 못 사면 false
+bool BuyPack(Game& game, bool gold = false);             // 칩으로 팩(gold면 골드 부스터)을 사서 손패에 카드 추가, 못 사면 false
+bool CanBuyPack(const Game& game, bool gold);
+int PromotedType(int type);                              // 같은 클래스의 다음 등급 유닛 종류, 영웅이면 -1
 bool PlaceUnit(Game& game, int handIndex, int i, int j); // 손패 유닛 카드를 타일에 놓기, 못 놓으면 false
 bool CanPlayCard(const Game& game, int handIndex, int i, int j); // 이 칸에 이 카드를 놓을 수 있나
 bool PlayCard(Game& game, int handIndex, int i, int j);  // 카드를 판에 놓기 (유닛 배치 또는 화면 전환)

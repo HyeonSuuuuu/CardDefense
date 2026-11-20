@@ -23,10 +23,37 @@ inline int BotFindCard(const Game& g, const char* spellId)
 	return -1;
 }
 
+inline int BotFindPromote(const Game& g)
+{
+	for (int h = 0; h < (int)g.hand.size(); ++h) {
+		if (g.hand[h] == CardPromote) {
+			return h;
+		}
+	}
+	return -1;
+}
+
 // 정비: 팩을 사고, 칩 주머니·전투의 북을 쓰고, 강한 말부터 놓는다. keepInHand장은 손패에 남긴다(캡처용)
 inline void BotPrepare(Game& g, int keepInHand = 0)
 {
+	while (BuyPack(g, true)) {}
 	while (BuyPack(g)) {}
+	// 승격: 올렸을 때 가장 강해지는 말에
+	for (int h; (h = BotFindPromote(g)) >= 0;) {
+		int best = -1;
+		float gain = 0.f;
+		for (int k = 0; k < (int)g.units.size(); ++k) {
+			int next = PromotedType(g.units[k].type);
+			if (next >= 0 && BotPower(next) - BotPower(g.units[k].type) > gain) {
+				gain = BotPower(next) - BotPower(g.units[k].type);
+				best = k;
+			}
+		}
+		if (best < 0) {
+			break;
+		}
+		PlayCard(g, h, g.units[best].i, g.units[best].j);
+	}
 	for (int h; (h = BotFindCard(g, "chip_pouch")) >= 0;) {
 		PlayCard(g, h, 2, 2);
 		while (BuyPack(g)) {}

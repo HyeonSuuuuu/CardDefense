@@ -55,7 +55,7 @@ struct Renderer
 	std::vector<GLuint> unitCards;  // units.csv 순서
 	std::vector<GLuint> spellCards; // spells.csv 순서
 	std::vector<GLuint> relicIcons; // relics.csv 순서
-	GLuint cardBack = 0;
+	GLuint cardBack = 0, promoteCard = 0, goldPack = 0;
 	GLuint startCard = 0, exitCard = 0, retryCard = 0, titleCard = 0;
 	GLuint digits = 0, chipIcon = 0, booster = 0, endTurn = 0, logo = 0, victory = 0, defeat = 0;
 
@@ -71,6 +71,7 @@ struct Renderer
 		int relic = -1;      // 유물이면 relics.csv 행 번호
 		float age = 0.f;
 		float delay = 0.f;   // 한 팩에서 여러 장이 나오면 차례로 나오게
+		bool gold = false;   // 골드 부스터에서 나옴
 	};
 	std::vector<PackAnim> packAnims;
 	int packHandSize = 0;  // 마지막으로 팩을 산 직후의 손패 수
@@ -108,6 +109,7 @@ bool Contains(const Rect& r, glm::vec2 p);
 Rect HandCardRect(int index, int count, int width, int height);
 int HandCardAt(const Game& game, glm::vec2 p, int width, int height);  // 그 위치의 손패 카드 번호, 없으면 -1
 Rect PackRect(int width, int height);
+Rect GoldPackRect(int width, int height);  // 골드 부스터 (일반 카드팩 위)
 Rect EndTurnRect(int width, int height);
 Rect SpeedRect(int width, int height);  // 배속 버튼 (턴 종료 버튼 위)
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height);
