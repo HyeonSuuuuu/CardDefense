@@ -79,7 +79,6 @@ struct Renderer
 	float jackpotTimer = -1.f;  // 대박 연출이 시작된 뒤 지난 시간 (음수면 없음)
 	int jackpotSource = 0;      // 대박이 터진 팩 (0 부스터, 1 골드)
 	GLuint betOn = 0, betOff = 0;
-	std::vector<GLuint> modifierBanners;  // modifiers.csv 순서 (assets/ui/round_<id>.png)
 
 	// 화면 전환 카드(Start/Exit/Retry/Title)를 놓았을 때. 화면이 다 덮이면 main이 카드를 실제로 쓴다
 	struct Transition

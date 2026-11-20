@@ -22,9 +22,8 @@ int main(int argc, char** argv)
 		while (g.phase != Phase::Result) {
 			BotPrepare(g);
 			int round = g.round;
-			// 직전 라운드를 20초 안에 깼고 이번 라운드 특성이 어렵지 않으면 베팅 (보스 라운드 제외)
-			const RoundModifier& m = CurrentModifier(g);
-			g.bet = lastClear < 20.f && round < MaxRound && m.count * m.hp * m.speed <= 1.15f;
+			// 직전 라운드를 18초 안에 깼으면 베팅 (보스 라운드 제외)
+			g.bet = lastClear < 18.f && round < MaxRound;
 			bets += g.bet ? 1 : 0;
 			EndTurn(g);
 			float t = 0.f;

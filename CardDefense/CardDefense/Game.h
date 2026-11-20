@@ -92,14 +92,6 @@ struct RelicData
 	float amount = 0.f;
 };
 
-// 라운드 특성 (modifiers.csv). 정비가 시작될 때 하나를 뽑는다. 보스에는 적용하지 않는다
-struct RoundModifier
-{
-	std::string id;
-	float weight = 1.f;
-	float count = 1.f, hp = 1.f, speed = 1.f, chips = 1.f;  // 몹 수·체력·속도·처치 칩 배율
-};
-
 // 부스터 결과 한 줄 (pack_outcomes.csv)
 enum class OutcomeKind { Relic, Unit, Spell, Promote };
 struct PackOutcome
@@ -119,7 +111,6 @@ struct GameData
 	std::vector<RelicData> relics;
 	std::vector<PackOutcome> boosterOutcomes;
 	std::vector<PackOutcome> goldOutcomes;  // 골드 부스터: 희귀 이상 말, 승격, 주문, 유물
-	std::vector<RoundModifier> modifiers;
 	int goldPrice = 15;
 	float roundTimeLimit = 30.f;
 	float spawnDuration = 15.f;
@@ -187,8 +178,6 @@ struct Game
 	bool quit = false;  // Exit 카드를 놓으면 true (main이 창을 닫는다)
 	bool bet = false;        // 정비 중 베팅 스위치. 턴 종료 때 betRound로 넘어간다
 	bool betRound = false;   // 이번 전투가 베팅한 라운드인지 (깨면 유물)
-	int modifier = 0;        // 이번 라운드 특성 (modifiers.csv 행 번호)
-	float chipCarry = 0.f;   // 칩 배율로 생긴 소수 부분을 모아 둔다
 
 	std::vector<int> hand;   // 손패 카드 (위 카드 번호)
 	std::vector<int> relics; // 가진 유물 (relics.csv 행 번호, 같은 유물이 여러 번 들어갈 수 있다)
@@ -226,8 +215,6 @@ float UnitDamage(const Game& game, const Unit& unit);
 int PackCardCount(const Game& game);                     // 팩 하나에서 나오는 결과 수
 void EndTurn(Game& game);                                // 정비 → 전투
 void ToggleBet(Game& game);                              // 정비 중 베팅 켜고 끄기
-void RollModifier(Game& game);                           // 이번 라운드 특성을 뽑는다 (정비가 시작될 때)
-const RoundModifier& CurrentModifier(const Game& game);
 
 // 전투 페이즈 (GameUpdate에서 호출)
 void SpawnMobs(Game& game, float dt);
