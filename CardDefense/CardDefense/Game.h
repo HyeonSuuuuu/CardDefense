@@ -16,11 +16,15 @@ constexpr int PathLength = (BoardSize - 1) * 4;  // 바깥 테두리 칸 수 = 2
 constexpr int MaxRound = 10;
 constexpr int MaxHand = 6;
 
-// 손패 카드 번호: 0 이상은 유닛 종류(units.csv 행 번호), 음수는 화면 전환 카드
+// 손패 카드 번호: 0 ~ 99는 유닛 종류(units.csv 행 번호), 100부터는 주문(100 + spells.csv 행 번호), 음수는 화면 전환 카드
+constexpr int CardSpellBase = 100;
 constexpr int CardStart = -1;  // 타이틀: 판에 놓으면 게임 시작
 constexpr int CardExit = -2;   // 타이틀: 판에 놓으면 프로그램 종료
 constexpr int CardRetry = -3;  // 결과: 다시 하기
 constexpr int CardTitle = -4;  // 결과: 타이틀로
+
+inline bool IsUnitCard(int card) { return card >= 0 && card < CardSpellBase; }
+inline bool IsSpellCard(int card) { return card >= CardSpellBase; }
 
 bool IsPathTile(int i, int j);         // 바깥 테두리면 경로 타일
 glm::vec3 TileCenter(int i, int j);    // 타일 중심의 월드 좌표 (보드 중심 = 원점, y = 0)
@@ -61,13 +65,49 @@ struct RoundData
 	std::vector<int> counts;  // mobs 순서대로 등장 수
 };
 
+enum class SpellTarget { Point, Slot, None };
+
+struct SpellData
+{
+	std::string id;
+	int rarity = 0;
+	SpellTarget target = SpellTarget::None;
+	float radius = 0.f;          // 칸 단위 범위
+	float amount = 0.f;          // 효과량 = (amount + amountPerRound × 라운드) × (dice면 주사위 1~6)
+	float amountPerRound = 0.f;
+	bool dice = false;
+	float multiplier = 1.f;      // 배율 효과 (전투의 북: 공격 속도)
+	float duration = 0.f;        // 지속 시간(초)
+};
+
+enum class RelicEffect { RareChance, PackExtraCard, RoundTime, ClassDamage };
+
+struct RelicData
+{
+	std::string id;
+	RelicEffect effect = RelicEffect::RareChance;
+	UnitClass targetClass = UnitClass::Mage;  // ClassDamage일 때만
+	float amount = 0.f;
+};
+
+// 부스터 결과 한 줄 (pack_outcomes.csv)
+enum class OutcomeKind { Relic, Unit, Spell };
+struct PackOutcome
+{
+	OutcomeKind kind = OutcomeKind::Unit;
+	int value = 0;      // Unit: 등급, Spell: spells 행 번호
+	float weight = 0.f;
+};
+
 struct GameData
 {
 	std::vector<UnitData> units;
 	std::vector<MobData> mobs;
 	std::vector<RoundData> rounds;
 	std::vector<int> starterUnits;     // 시작 손패 (유닛 종류 번호)
-	std::vector<float> boosterTierWeights; // 부스터에서 유닛 등급 0~2가 나올 가중치
+	std::vector<SpellData> spells;
+	std::vector<RelicData> relics;
+	std::vector<PackOutcome> boosterOutcomes;
 	float roundTimeLimit = 30.f;
 	float spawnDuration = 15.f;
 	int clearBonusBase = 3;
@@ -90,6 +130,7 @@ struct Unit
 	int type = 0;          // 유닛 종류 (units.csv 행 번호)
 	int i = 0, j = 0;      // 놓인 타일
 	float cooldown = 0.f;  // 다음 공격까지 남은 시간(초)
+	float drumTimer = 0.f; // 전투의 북 남은 시간(초). 0보다 크면 공격 속도가 빨라진다
 	float attackTimer = 0.f; // 공격한 뒤 지난 시간 (연출용)
 	glm::vec3 attackTarget = glm::vec3(0.f); // 마지막으로 공격한 위치 (연출용)
 };
@@ -108,11 +149,13 @@ struct Mob
 constexpr float DieTime = 0.7f;  // 죽은 몹이 사라지는 연출 시간(초)
 
 // 게임에서 일어난 일. Renderer가 읽어 파티클 같은 연출을 만들고, main이 매 프레임 비운다.
-enum class EventType { Summon, Hit, Death };
+// effects.csv 순서와 맞춘 앞의 넷은 파티클, 뒤의 둘은 UI 연출(value = 손패 번호 / 유물 번호)
+enum class EventType { Summon, Hit, Death, Meteor, PackCard, PackRelic };
 struct GameEvent
 {
 	EventType type;
 	glm::vec3 position;
+	int value = 0;
 };
 
 struct Game
@@ -127,6 +170,7 @@ struct Game
 	bool quit = false;  // Exit 카드를 놓으면 true (main이 창을 닫는다)
 
 	std::vector<int> hand;   // 손패 카드 (위 카드 번호)
+	std::vector<int> relics; // 가진 유물 (relics.csv 행 번호, 같은 유물이 여러 번 들어갈 수 있다)
 	std::vector<Unit> units;
 	std::vector<Mob> mobs;
 	std::vector<Mob> dying;      // 죽어서 사라지는 중인 몹 (연출용, 판정에는 안 씀)
@@ -149,7 +193,14 @@ bool BuyPack(Game& game);                                // 칩으로 팩을 사
 bool PlaceUnit(Game& game, int handIndex, int i, int j); // 손패 유닛 카드를 타일에 놓기, 못 놓으면 false
 bool CanPlayCard(const Game& game, int handIndex, int i, int j); // 이 칸에 이 카드를 놓을 수 있나
 bool PlayCard(Game& game, int handIndex, int i, int j);  // 카드를 판에 놓기 (유닛 배치 또는 화면 전환)
-bool SellCard(Game& game, int handIndex);                // 유닛 카드를 팔아 칩 받기
+bool SellCard(Game& game, int handIndex);                // 유닛·주문 카드를 팔아 칩 받기
+void CastSpell(Game& game, int spell, int i, int j);     // 주문 효과 (PlayCard가 부른다)
+
+// 유물을 반영한 값
+int RelicCount(const Game& game, RelicEffect effect, UnitClass unitClass = UnitClass::Mage);
+float RoundTimeLimit(const Game& game);
+float UnitDamage(const Game& game, const Unit& unit);
+int PackCardCount(const Game& game);                     // 팩 하나에서 나오는 결과 수
 void EndTurn(Game& game);                                // 정비 → 전투
 
 // 전투 페이즈 (GameUpdate에서 호출)

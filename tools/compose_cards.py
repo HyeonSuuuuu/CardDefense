@@ -3,6 +3,7 @@
 사용: python -I tools/compose_cards.py   (프로젝트 폴더에서)
 - 유닛 9장: 등급별 틀(frame_common/rare/hero), 이름은 units.csv의 name
 - 화면 전환 4장: frame_system, Start/Exit/Retry/Title
+- 주문 3장: 등급별 틀, 이름은 spells.csv의 name
 글꼴은 Windows의 맑은 고딕 굵게(malgunbd.ttf)를 쓴다.
 """
 import csv
@@ -14,6 +15,8 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARDS = os.path.join(ROOT, 'assets', 'cards')
 UNITS_CSV = os.path.join(ROOT, 'CardDefense', 'CardDefense', 'Data', 'units.csv')
+SPELLS_CSV = os.path.join(ROOT, 'CardDefense', 'CardDefense', 'Data', 'spells.csv')
+SPELL_ART = {'meteor_dice': 'art_spell_meteor.png', 'battle_drum': 'art_spell_drum.png', 'chip_pouch': 'art_spell_chips.png'}
 FONT = r'C:\Windows\Fonts\malgunbd.ttf'
 
 # 틀(512×768) 안의 칸 위치: 그림 칸, 이름 칸, 아래 두 줄 사이 태그 칸
@@ -83,6 +86,12 @@ def main():
         tier = int(row['tier'])
         tag = CLASS_NAMES[row['class']] + ' · ' + TIER_NAMES[tier]
         compose(TIER_FRAMES[tier], 'art_' + row['id'] + '.png', row['name'], tag, 'card_' + row['id'] + '.png')
+
+    with open(SPELLS_CSV, encoding='utf-8') as f:
+        lines = [line for line in f if line.strip() and not line.startswith('#')]
+    for row in csv.DictReader(lines):
+        tier = int(row['rarity'])
+        compose(TIER_FRAMES[tier], SPELL_ART[row['id']], row['name'], '주문 · ' + TIER_NAMES[tier], 'card_' + row['id'] + '.png')
 
     for card_id, name, tag in SYSTEM_CARDS:
         compose('frame_system.png', 'art_' + card_id + '.png', name, tag, 'card_' + card_id + '.png')

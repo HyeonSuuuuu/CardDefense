@@ -10,6 +10,8 @@ struct Rect
 	float x = 0.f, y = 0.f, w = 0.f, h = 0.f;
 };
 
+constexpr float PackAnimTime = 0.7f;  // 카드팩에서 나온 카드가 손패에 들어가기까지(초)
+
 // 파티클 한 종류의 수치 (Data/effects.csv 한 줄)
 struct EffectData
 {
@@ -45,13 +47,26 @@ struct Renderer
 
 	// UI 텍스처
 	std::vector<GLuint> unitCards;  // units.csv 순서
+	std::vector<GLuint> spellCards; // spells.csv 순서
+	std::vector<GLuint> relicIcons; // relics.csv 순서
+	GLuint cardBack = 0;
 	GLuint startCard = 0, exitCard = 0, retryCard = 0, titleCard = 0;
 	GLuint digits = 0, chipIcon = 0, booster = 0, endTurn = 0, logo = 0, victory = 0, defeat = 0;
 
-	// 파티클: EventType 순서(Summon, Hit, Death)로 수치를 둔다
+	// 파티클: EventType 순서(Summon, Hit, Death, Meteor)로 수치를 둔다
 	std::vector<EffectData> effects;
 	std::vector<Particle> particles;
 	GLuint dotTexture = 0;  // 가운데가 진하고 가장자리가 투명한 점
+
+	// 카드팩 개봉 연출: 팩에서 뒤집히며 손패 자리로 날아가는 카드 (PackAnimTime초)
+	struct PackAnim
+	{
+		int handIndex = -1;  // 손패 카드면 손패 번호, 유물이면 -1
+		int relic = -1;      // 유물이면 relics.csv 행 번호
+		float age = 0.f;
+		float delay = 0.f;   // 한 팩에서 여러 장이 나오면 차례로 나오게
+	};
+	std::vector<PackAnim> packAnims;
 
 	// UI 입력 상태 (main이 채운다)
 	glm::vec2 mouse = glm::vec2(0.f);  // 창 좌표

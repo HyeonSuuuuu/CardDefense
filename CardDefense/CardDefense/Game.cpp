@@ -79,6 +79,16 @@ static int FindUnit(const std::string& id)
 	return -1;
 }
 
+static int FindSpell(const std::string& id)
+{
+	for (int k = 0; k < (int)gameData.spells.size(); ++k) {
+		if (gameData.spells[k].id == id) {
+			return k;
+		}
+	}
+	return -1;
+}
+
 bool LoadGameData()
 {
 	GameData& d = gameData;
@@ -159,17 +169,69 @@ bool LoadGameData()
 		}
 	}
 
-	// 지금은 부스터의 유닛 결과만 쓴다 (유물·주문·골드 부스터는 나중에).
+	if (!LoadCsv("Data/spells.csv", t)) {
+		return false;
+	}
+	for (auto& row : t.rows) {
+		SpellData sp;
+		sp.id = row[CsvColumn(t, "id")];
+		sp.rarity = std::stoi(row[CsvColumn(t, "rarity")]);
+		std::string target = row[CsvColumn(t, "target")];
+		sp.target = target == "point" ? SpellTarget::Point : target == "slot" ? SpellTarget::Slot : SpellTarget::None;
+		sp.radius = std::stof(row[CsvColumn(t, "radius")]);
+		sp.amount = std::stof(row[CsvColumn(t, "amount")]);
+		sp.amountPerRound = std::stof(row[CsvColumn(t, "amount_per_round")]);
+		sp.dice = row[CsvColumn(t, "dice")] == "1";
+		sp.multiplier = std::stof(row[CsvColumn(t, "multiplier")]);
+		sp.duration = std::stof(row[CsvColumn(t, "duration")]);
+		d.spells.push_back(sp);
+	}
+
+	if (!LoadCsv("Data/relics.csv", t)) {
+		return false;
+	}
+	for (auto& row : t.rows) {
+		RelicData r;
+		r.id = row[CsvColumn(t, "id")];
+		std::string effect = row[CsvColumn(t, "effect")];
+		r.effect = effect == "rare_chance" ? RelicEffect::RareChance
+			: effect == "pack_extra_card" ? RelicEffect::PackExtraCard
+			: effect == "round_time" ? RelicEffect::RoundTime : RelicEffect::ClassDamage;
+		std::string c = row[CsvColumn(t, "target_class")];
+		r.targetClass = c == "archer" ? UnitClass::Archer : c == "warrior" ? UnitClass::Warrior : UnitClass::Mage;
+		r.amount = std::stof(row[CsvColumn(t, "amount")]);
+		d.relics.push_back(r);
+	}
+
+	// 부스터 결과만 쓴다 (골드 부스터·승격은 넣지 않았다)
 	if (!LoadCsv("Data/pack_outcomes.csv", t)) {
 		return false;
 	}
-	d.boosterTierWeights = { 0.f, 0.f, 0.f };
 	for (auto& row : t.rows) {
-		const std::string& outcome = row[CsvColumn(t, "outcome")];
-		if (row[CsvColumn(t, "pack")] == "booster" && outcome.compare(0, 5, "unit:") == 0) {
-			int tier = std::stoi(outcome.substr(5));
-			d.boosterTierWeights[tier] += std::stof(row[CsvColumn(t, "weight")]);
+		if (row[CsvColumn(t, "pack")] != "booster") {
+			continue;
 		}
+		const std::string& text = row[CsvColumn(t, "outcome")];
+		PackOutcome o;
+		o.weight = std::stof(row[CsvColumn(t, "weight")]);
+		if (text == "relic") {
+			o.kind = OutcomeKind::Relic;
+		}
+		else if (text.compare(0, 5, "unit:") == 0) {
+			o.kind = OutcomeKind::Unit;
+			o.value = std::stoi(text.substr(5));
+		}
+		else if (text.compare(0, 6, "spell:") == 0) {
+			o.kind = OutcomeKind::Spell;
+			o.value = FindSpell(text.substr(6));
+			if (o.value < 0) {
+				continue;
+			}
+		}
+		else {
+			continue;
+		}
+		d.boosterOutcomes.push_back(o);
 	}
 
 	if ((int)d.rounds.size() < MaxRound) {
@@ -245,23 +307,70 @@ void GameUpdate(Game& game, float dt)
 //   플레이어 조작(팩 사기, 말 놓기, 턴 종료)
 // ========================================================================
 
+// 부스터 결과 가중치. 행운의 주사위 1개당 유닛 일반 등급 확률 5%p를 희귀·영웅에 나눠 준다
+static std::vector<float> BoosterWeights(const Game& game)
+{
+	const std::vector<PackOutcome>& outcomes = gameData.boosterOutcomes;
+	std::vector<float> w;
+	float unitTotal = 0.f, common = 0.f, higher = 0.f;
+	for (const PackOutcome& o : outcomes) {
+		w.push_back(o.weight);
+		if (o.kind == OutcomeKind::Unit) {
+			unitTotal += o.weight;
+			if (o.value == 0) {
+				common += o.weight;
+			}
+			else {
+				higher += o.weight;
+			}
+		}
+	}
+	float shift = std::min(common, unitTotal * 0.05f * RelicCount(game, RelicEffect::RareChance));
+	for (int k = 0; k < (int)outcomes.size() && shift > 0.f && higher > 0.f; ++k) {
+		if (outcomes[k].kind == OutcomeKind::Unit) {
+			w[k] += outcomes[k].value == 0 ? -shift * w[k] / common : shift * w[k] / higher;
+		}
+	}
+	return w;
+}
+
+static int RandomUnit(int tier)
+{
+	// 클래스는 셋 중 무작위
+	UnitClass unitClass = (UnitClass)std::uniform_int_distribution<int>(0, 2)(rng);
+	for (int k = 0; k < (int)gameData.units.size(); ++k) {
+		if (gameData.units[k].tier == tier && gameData.units[k].unitClass == unitClass) {
+			return k;
+		}
+	}
+	return 0;
+}
+
+int PackCardCount(const Game& game)
+{
+	return 1 + RelicCount(game, RelicEffect::PackExtraCard);
+}
+
 bool BuyPack(Game& game)
 {
-	if (game.phase != Phase::Prepare || game.chips < gameData.boosterPrice || (int)game.hand.size() >= MaxHand) {
+	int count = PackCardCount(game);
+	if (game.phase != Phase::Prepare || game.chips < gameData.boosterPrice || (int)game.hand.size() + count > MaxHand) {
 		return false;
 	}
 	game.chips -= gameData.boosterPrice;
 
-	// 등급을 가중치로 뽑고, 클래스는 셋 중 무작위
-	const std::vector<float>& w = gameData.boosterTierWeights;
-	std::discrete_distribution<int> tierDist(w.begin(), w.end());
-	int tier = tierDist(rng);
-	UnitClass unitClass = (UnitClass)std::uniform_int_distribution<int>(0, 2)(rng);
-	for (int k = 0; k < (int)gameData.units.size(); ++k) {
-		if (gameData.units[k].tier == tier && gameData.units[k].unitClass == unitClass) {
-			game.hand.push_back(k);
-			break;
+	std::vector<float> w = BoosterWeights(game);
+	std::discrete_distribution<int> pick(w.begin(), w.end());
+	for (int n = 0; n < count; ++n) {
+		const PackOutcome& o = gameData.boosterOutcomes[pick(rng)];
+		if (o.kind == OutcomeKind::Relic) {
+			int relic = std::uniform_int_distribution<int>(0, (int)gameData.relics.size() - 1)(rng);
+			game.relics.push_back(relic);
+			game.events.push_back({ EventType::PackRelic, glm::vec3(0.f), relic });
+			continue;
 		}
+		game.hand.push_back(o.kind == OutcomeKind::Unit ? RandomUnit(o.value) : CardSpellBase + o.value);
+		game.events.push_back({ EventType::PackCard, glm::vec3(0.f), (int)game.hand.size() - 1 });
 	}
 	return true;
 }
@@ -274,15 +383,22 @@ bool CanPlayCard(const Game& game, int handIndex, int i, int j)
 	if (i < 0 || i >= BoardSize || j < 0 || j >= BoardSize) {
 		return false;
 	}
-	if (game.hand[handIndex] < 0) {
+	int card = game.hand[handIndex];
+	if (card < 0) {
 		return true;  // 화면 전환 카드는 판 어디에 놓아도 된다
 	}
-	return (game.phase == Phase::Prepare || game.phase == Phase::Battle) && !IsPathTile(i, j);
+	bool playing = game.phase == Phase::Prepare || game.phase == Phase::Battle;
+	if (IsSpellCard(card)) {
+		// 운석은 몹이 있는 전투 중에만, 나머지는 판 어디든
+		const SpellData& sp = gameData.spells[card - CardSpellBase];
+		return sp.target == SpellTarget::Point ? game.phase == Phase::Battle : playing;
+	}
+	return playing && !IsPathTile(i, j);
 }
 
 bool PlaceUnit(Game& game, int handIndex, int i, int j)
 {
-	if (!CanPlayCard(game, handIndex, i, j) || game.hand[handIndex] < 0) {
+	if (!CanPlayCard(game, handIndex, i, j) || !IsUnitCard(game.hand[handIndex])) {
 		return false;
 	}
 
@@ -322,8 +438,87 @@ bool PlayCard(Game& game, int handIndex, int i, int j)
 		game.quit = true;
 		return true;
 	default:
-		return PlaceUnit(game, handIndex, i, j);
+		break;
 	}
+	int card = game.hand[handIndex];
+	if (IsSpellCard(card)) {
+		game.hand.erase(game.hand.begin() + handIndex);
+		CastSpell(game, card - CardSpellBase, i, j);
+		return true;
+	}
+	return PlaceUnit(game, handIndex, i, j);
+}
+
+void CastSpell(Game& game, int spell, int i, int j)
+{
+	const SpellData& sp = gameData.spells[spell];
+	float amount = sp.amount + sp.amountPerRound * game.round;
+	if (sp.dice) {
+		amount *= std::uniform_int_distribution<int>(1, 6)(rng);
+	}
+	glm::vec3 center = TileCenter(i, j);
+
+	switch (sp.target) {
+	case SpellTarget::Point:
+		// 운석: 범위 안 몹에 피해. 죽은 몹은 다음 UpdateUnits에서 정리된다
+		for (Mob& m : game.mobs) {
+			if (glm::distance(center, PathPosition(m.pathPos)) <= sp.radius) {
+				m.hp -= amount;
+				m.hitTimer = 0.15f;
+			}
+		}
+		game.events.push_back({ EventType::Meteor, center + glm::vec3(0.f, 0.2f, 0.f), (int)amount });
+		break;
+	case SpellTarget::Slot:
+		// 전투의 북: 그 칸과 주변 8칸의 말
+		for (Unit& u : game.units) {
+			if (std::abs(u.i - i) <= (int)sp.radius && std::abs(u.j - j) <= (int)sp.radius) {
+				u.drumTimer = sp.duration;
+				game.events.push_back({ EventType::Summon, TileCenter(u.i, u.j) });
+			}
+		}
+		break;
+	case SpellTarget::None:
+		game.chips += (int)amount;
+		game.events.push_back({ EventType::Summon, center });
+		break;
+	}
+}
+
+int RelicCount(const Game& game, RelicEffect effect, UnitClass unitClass)
+{
+	int count = 0;
+	for (int r : game.relics) {
+		const RelicData& rd = gameData.relics[r];
+		if (rd.effect == effect && (effect != RelicEffect::ClassDamage || rd.targetClass == unitClass)) {
+			++count;
+		}
+	}
+	return count;
+}
+
+float RoundTimeLimit(const Game& game)
+{
+	float bonus = 0.f;
+	for (int r : game.relics) {
+		if (gameData.relics[r].effect == RelicEffect::RoundTime) {
+			bonus += gameData.relics[r].amount;
+		}
+	}
+	return gameData.roundTimeLimit + bonus;
+}
+
+float UnitDamage(const Game& game, const Unit& unit)
+{
+	const UnitData& ud = gameData.units[unit.type];
+	float bonus = 0.f;
+	for (int r : game.relics) {
+		const RelicData& rd = gameData.relics[r];
+		if (rd.effect == RelicEffect::ClassDamage && rd.targetClass == ud.unitClass) {
+			bonus += rd.amount * 0.01f;
+		}
+	}
+	return ud.damage * (1.f + bonus);
 }
 
 bool SellCard(Game& game, int handIndex)
@@ -406,7 +601,12 @@ void UpdateUnits(Game& game, float dt)
 {
 	for (Unit& u : game.units) {
 		const UnitData& ud = gameData.units[u.type];
-		u.cooldown -= dt;
+		float speed = 1.f;
+		if (u.drumTimer > 0.f) {
+			u.drumTimer -= dt;
+			speed = gameData.spells[FindSpell("battle_drum")].multiplier;
+		}
+		u.cooldown -= dt * speed;
 		if (u.cooldown > 0.f) {
 			continue;
 		}
@@ -431,7 +631,7 @@ void UpdateUnits(Game& game, float dt)
 		for (int k = 0; k < (int)game.mobs.size(); ++k) {
 			bool inSplash = ud.splash > 0.f && glm::distance(hitPos, PathPosition(game.mobs[k].pathPos)) <= ud.splash;
 			if (k == target || inSplash) {
-				game.mobs[k].hp -= ud.damage;
+				game.mobs[k].hp -= UnitDamage(game, u);
 				game.mobs[k].hitTimer = 0.15f;
 				game.events.push_back({ EventType::Hit, PathPosition(game.mobs[k].pathPos) + glm::vec3(0.f, 0.3f, 0.f) });
 			}
@@ -467,7 +667,7 @@ void CheckRoundEnd(Game& game)
 			game.phase = Phase::Prepare;
 		}
 	}
-	else if (game.timer >= gameData.roundTimeLimit) {
+	else if (game.timer >= RoundTimeLimit(game)) {
 		EnterResult(game, false);
 	}
 }

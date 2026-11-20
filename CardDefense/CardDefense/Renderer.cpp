@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include "Util/Texture.h"
 #include "Util/Csv.h"
+#include "Util/Easing.h"
+#include <algorithm>
 #include <random>
 #include <cmath>
 
@@ -21,14 +23,15 @@ static glm::vec4 ParseColor(const std::string& text)
 static void LoadEffects(Renderer& renderer)
 {
 	// EventType 순서에 맞춰 effects.csv에서 이름으로 찾는다
-	const char* names[] = { "SummonDust", "Hit", "Death" };
-	renderer.effects.assign(3, EffectData{});
+	const char* names[] = { "SummonDust", "Hit", "Death", "Meteor" };
+	const int count = 4;
+	renderer.effects.assign(count, EffectData{});
 	CsvTable t;
 	if (!LoadCsv("Data/effects.csv", t)) {
 		return;
 	}
 	for (auto& row : t.rows) {
-		for (int k = 0; k < 3; ++k) {
+		for (int k = 0; k < count; ++k) {
 			if (row[CsvColumn(t, "type")] != names[k]) {
 				continue;
 			}
@@ -107,6 +110,19 @@ void RendererInit(Renderer& renderer)
 	for (const UnitData& ud : gameData.units) {
 		renderer.unitCards.push_back(LoadTexture(("assets/cards/card_" + ud.id + ".png").c_str()));
 	}
+	for (const SpellData& sp : gameData.spells) {
+		renderer.spellCards.push_back(LoadTexture(("assets/cards/card_" + sp.id + ".png").c_str()));
+	}
+	// 유물 아이콘 파일 이름은 id에서 앞뒤를 바꾼 것 (mage_crest → relic_crest_mage)
+	for (const RelicData& rd : gameData.relics) {
+		std::string file = rd.id;
+		size_t bar = file.find('_');
+		if (file.compare(bar + 1, std::string::npos, "crest") == 0) {
+			file = "crest_" + file.substr(0, bar);
+		}
+		renderer.relicIcons.push_back(LoadTexture(("assets/ui/relic_" + file + ".png").c_str()));
+	}
+	renderer.cardBack = LoadTexture("assets/cards/card_back.png");
 	renderer.startCard = LoadTexture("assets/cards/card_sys_start.png");
 	renderer.exitCard = LoadTexture("assets/cards/card_sys_exit.png");
 	renderer.retryCard = LoadTexture("assets/cards/card_sys_retry.png");
@@ -125,7 +141,16 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 	renderer.camera.yaw += renderer.camera.yawDir * dt * 30.f;
 
 	// 이번 프레임의 게임 이벤트마다 파티클을 뿌린다
+	int packCount = 0;
 	for (const GameEvent& event : game.events) {
+		if (event.type == EventType::PackCard || event.type == EventType::PackRelic) {
+			Renderer::PackAnim anim;
+			anim.handIndex = event.type == EventType::PackCard ? event.value : -1;
+			anim.relic = event.type == EventType::PackRelic ? event.value : -1;
+			anim.delay = 0.25f * packCount++;
+			renderer.packAnims.push_back(anim);
+			continue;
+		}
 		int k = (int)event.type;
 		if (k < 0 || k >= (int)renderer.effects.size()) {
 			continue;
@@ -149,6 +174,14 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 			p.position = event.position + glm::vec3(0.f, 0.05f, 0.f);
 			p.velocity = dir * speed;
 			renderer.particles.push_back(p);
+		}
+	}
+
+	for (int k = (int)renderer.packAnims.size() - 1; k >= 0; --k) {
+		Renderer::PackAnim& a = renderer.packAnims[k];
+		a.age += dt;
+		if (a.age - a.delay >= PackAnimTime || game.phase != Phase::Prepare) {
+			renderer.packAnims.erase(renderer.packAnims.begin() + k);
 		}
 	}
 
@@ -334,7 +367,13 @@ void RenderUnits(const Renderer& renderer, const Game& game)
 		glm::vec3 center = TileCenter(u.i, u.j);
 		glm::vec3 toTarget = u.attackTarget - center;
 		float yaw = glm::length(toTarget) > 0.01f && u.attackTimer < 9.f ? FacingYaw(toTarget) : 0.f;
+		// 전투의 북을 받은 말은 밝게 깜빡인다
+		if (u.drumTimer > 0.f) {
+			float pulse = 0.5f + 0.5f * std::sin((float)glfwGetTime() * 10.f);
+			SetFloat(renderer.program, "uFlash", 0.15f + 0.15f * pulse);
+		}
 		DrawFigure(renderer, renderer.unitModels[u.type], center, yaw, height * bump, UnitColor(ud));
+		SetFloat(renderer.program, "uFlash", 0.f);
 
 		// 공격 연출(임시): 작은 큐브가 말 위에서 맞은 위치로 날아간다
 		const float flyTime = 0.15f;
@@ -404,13 +443,34 @@ void RenderMobs(const Renderer& renderer, const Game& game)
 	SetFloat(renderer.program, "uDissolve", 0.f);
 }
 
+// 주문 범위: 운석은 붉은 원, 전투의 북은 주변 3×3 칸
+static void RenderSpellPreview(const Renderer& renderer, const SpellData& sp, glm::vec3 center)
+{
+	if (sp.target == SpellTarget::Point) {
+		glm::mat4 ring = glm::translate(glm::mat4(1.f), center + glm::vec3(0.f, 0.02f, 0.f));
+		ring = glm::scale(ring, glm::vec3(sp.radius, 1.f, sp.radius));
+		SetVec3(renderer.program, "uColor", glm::vec3(1.f, 0.45f, 0.2f));
+		SetFloat(renderer.program, "uAlpha", 0.3f);
+		Draw(renderer.program, renderer.disc, ring);
+		SetFloat(renderer.program, "uAlpha", 0.9f);
+		Draw(renderer.program, renderer.circle, ring);
+	}
+	else if (sp.target == SpellTarget::Slot) {
+		float size = (sp.radius * 2.f + 1.f) * TileSize;
+		glm::mat4 area = glm::translate(glm::mat4(1.f), center + glm::vec3(0.f, 0.03f, 0.f));
+		area = glm::scale(area, glm::vec3(size, 0.01f, size));
+		SetVec3(renderer.program, "uColor", glm::vec3(1.f, 0.85f, 0.3f));
+		SetFloat(renderer.program, "uAlpha", 0.3f);
+		Draw(renderer.program, renderer.cube, area);
+	}
+}
+
 void RenderPreview(const Renderer& renderer, const Game& game)
 {
 	int card = renderer.dragCard >= 0 && renderer.dragCard < (int)game.hand.size() ? game.hand[renderer.dragCard] : -1;
 	if (card < 0 || !CanPlayCard(game, renderer.dragCard, renderer.hoverI, renderer.hoverJ)) {
 		return;
 	}
-	const UnitData& ud = gameData.units[card];
 	glm::vec3 center = TileCenter(renderer.hoverI, renderer.hoverJ);
 
 	// 반투명: 뒤에 있는 것과 섞어 그리고, 깊이는 쓰지 않아 뒤쪽 물체를 가리지 않게 한다.
@@ -418,6 +478,15 @@ void RenderPreview(const Renderer& renderer, const Game& game)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_FALSE);
 	SetInt(renderer.program, "uLighting", 0);
+
+	if (IsSpellCard(card)) {
+		RenderSpellPreview(renderer, gameData.spells[card - CardSpellBase], center);
+		SetFloat(renderer.program, "uAlpha", 1.f);
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+		return;
+	}
+	const UnitData& ud = gameData.units[card];
 
 	// 사거리 원: 옅은 원판 + 진한 테두리. 칸 윗면(y = 0)과 겹쳐 깜빡이지 않게 조금 띄운다
 	glm::mat4 ring = glm::translate(glm::mat4(1.f), center + glm::vec3(0.f, 0.02f, 0.f));
@@ -575,7 +644,71 @@ static GLuint CardTexture(const Renderer& renderer, int card)
 	case CardExit: return renderer.exitCard;
 	case CardRetry: return renderer.retryCard;
 	case CardTitle: return renderer.titleCard;
-	default: return card >= 0 && card < (int)renderer.unitCards.size() ? renderer.unitCards[card] : 0;
+	default:
+		if (IsSpellCard(card)) {
+			return card - CardSpellBase < (int)renderer.spellCards.size() ? renderer.spellCards[card - CardSpellBase] : 0;
+		}
+		return card >= 0 && card < (int)renderer.unitCards.size() ? renderer.unitCards[card] : 0;
+	}
+}
+
+static bool IsPackAnimating(const Renderer& renderer, int handIndex)
+{
+	for (const Renderer::PackAnim& a : renderer.packAnims) {
+		if (a.handIndex == handIndex) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static Rect RelicSlotRect(const Game& game, int relic, float s)
+{
+	// 유물 줄에서 그 유물 아이콘의 자리 (RenderUi의 유물 줄과 같은 배치)
+	float x = 24.f * s;
+	for (int r = 0; r < relic; ++r) {
+		if (std::count(game.relics.begin(), game.relics.end(), r) > 0) {
+			x += 56.f * s;
+		}
+	}
+	return Rect{ x, 72.f * s, 48.f * s, 48.f * s };
+}
+
+// 카드팩 개봉: 팩 위에서 커지며 y축으로 반 바퀴 돌아 앞면이 보이고, 손패(유물은 유물 줄) 자리로 날아간다
+static void RenderPackAnims(const Renderer& renderer, const Game& game, int width, int height)
+{
+	float s = UiScale(height);
+	Rect pack = PackRect(width, height);
+	int count = (int)game.hand.size();
+	for (const Renderer::PackAnim& a : renderer.packAnims) {
+		float t = (a.age - a.delay) / PackAnimTime;
+		if (t < 0.f) {
+			continue;
+		}
+		bool relic = a.handIndex < 0;
+		Rect to = relic ? RelicSlotRect(game, a.relic, s) : HandCardRect(a.handIndex, count, width, height);
+		Rect from = Rect{ pack.x + pack.w * 0.5f - to.w * 0.5f, pack.y - to.h * 0.6f, to.w, to.h };
+		if (relic) {
+			from = Rect{ pack.x + pack.w * 0.5f - 60.f * s, pack.y - 150.f * s, 120.f * s, 120.f * s };
+		}
+
+		// 앞 절반: 제자리에서 뒤집기, 뒤 절반: 손패로 이동
+		float flip = Clamp01(t * 2.f);
+		float move = EaseOutCubic(t * 2.f - 1.f);
+		Rect r;
+		r.x = glm::mix(from.x, to.x, move);
+		r.y = glm::mix(from.y, to.y, move);
+		r.w = glm::mix(from.w, to.w, move);
+		r.h = glm::mix(from.h, to.h, move);
+
+		// y축 회전을 화면에서는 가로 폭 |cos|로 보인다. 90도를 넘으면 앞면
+		float squash = std::abs(std::cos(flip * 3.14159265f));
+		bool front = flip >= 0.5f;
+		float cx = r.x + r.w * 0.5f;
+		r.w *= squash;
+		r.x = cx - r.w * 0.5f;
+		GLuint texture = !front ? renderer.cardBack : relic ? renderer.relicIcons[a.relic] : CardTexture(renderer, game.hand[a.handIndex]);
+		DrawRect(renderer, texture, r, glm::vec3(1.f), 1.f);
 	}
 }
 
@@ -604,7 +737,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		DrawNumber(renderer, text, 24.f * s, 10.f * s, 44.f * s, 0.f, white);
 
 		if (playing) {
-			float limit = gameData.roundTimeLimit;
+			float limit = RoundTimeLimit(game);
 			float left = game.phase == Phase::Battle ? std::max(0.f, limit - game.timer) : limit;
 			snprintf(text, sizeof(text), "%d", (int)std::ceil(left));
 			bool hurry = game.phase == Phase::Battle && left <= 5.f;
@@ -619,6 +752,23 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		DrawNumber(renderer, text, width - 98.f * s, 10.f * s, 44.f * s, 0.f, white);
 	}
 
+	// 유물: 위 막대 아래 왼쪽에 종류마다 아이콘 하나, 2개 이상이면 개수
+	if (playing) {
+		float x = 24.f * s;
+		for (int r = 0; r < (int)gameData.relics.size(); ++r) {
+			int owned = (int)std::count(game.relics.begin(), game.relics.end(), r);
+			if (owned == 0) {
+				continue;
+			}
+			DrawRect(renderer, renderer.relicIcons[r], Rect{ x, 72.f * s, 48.f * s, 48.f * s }, white, 1.f);
+			if (owned > 1) {
+				snprintf(text, sizeof(text), "x%d", owned);
+				DrawNumber(renderer, text, x + 48.f * s, 96.f * s, 26.f * s, 1.f, white);
+			}
+			x += 56.f * s;
+		}
+	}
+
 	// 타이틀 로고, 결과 글자
 	if (game.phase == Phase::Title) {
 		DrawRect(renderer, renderer.logo, Rect{ width * 0.5f - 330.f * s, 40.f * s, 660.f * s, 248.f * s }, white, 1.f);
@@ -631,7 +781,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	// 팩 구매(정비 중에만), 턴 종료 버튼
 	if (playing) {
 		Rect pack = PackRect(width, height);
-		bool canBuy = game.phase == Phase::Prepare && game.chips >= gameData.boosterPrice && (int)game.hand.size() < MaxHand;
+		bool canBuy = game.phase == Phase::Prepare && game.chips >= gameData.boosterPrice && (int)game.hand.size() + PackCardCount(game) <= MaxHand;
 		bool sellTarget = renderer.dragCard >= 0 && game.hand[renderer.dragCard] >= 0;  // 카드를 끌어 오면 판다
 		glm::vec3 packColor = canBuy || sellTarget ? white : dim;
 		if (sellTarget && Contains(pack, renderer.mouse)) {
@@ -652,7 +802,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	int count = (int)game.hand.size();
 	int hovered = renderer.dragCard < 0 ? HandCardAt(game, renderer.mouse, width, height) : -1;
 	for (int k = 0; k < count; ++k) {
-		if (k == renderer.dragCard) {
+		if (k == renderer.dragCard || IsPackAnimating(renderer, k)) {
 			continue;
 		}
 		Rect r = HandCardRect(k, count, width, height);
@@ -671,6 +821,8 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		r.y = renderer.mouse.y - (overBoard ? r.h + 12.f * s : r.h * 0.5f);
 		DrawRect(renderer, CardTexture(renderer, game.hand[renderer.dragCard]), r, white, overBoard ? 0.85f : 1.f);
 	}
+
+	RenderPackAnims(renderer, game, width, height);
 
 	SetFloat(renderer.program, "uAlpha", 1.f);
 	SetInt(renderer.program, "uUseTexture", 0);
