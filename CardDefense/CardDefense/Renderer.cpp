@@ -7,6 +7,9 @@
 #include <cmath>
 
 static std::mt19937 effectRng{ 1234u };
+static const glm::vec3 LightDir = glm::normalize(glm::vec3(0.7f, 1.f, 0.5f));  // 표면에서 빛 쪽으로
+static const int ShadowSize = 2048;
+static bool shadowPass = false;  // 그림자 맵을 그리는 중이면 외곽선 등 깊이에 필요 없는 것을 건너뛴다
 
 static float RandomRange(float a, float b)
 {
@@ -87,6 +90,27 @@ void RendererInit(Renderer& renderer)
 	renderer.disc = CreateDisc(48);
 	renderer.circle = CreateCircle(48);
 	renderer.dotTexture = CreateDotTexture();
+
+	// 그림자 맵: 색 없이 깊이만 받는 프레임버퍼. 맵 밖은 깊이 1(가장 멂)로 읽혀 그림자가 생기지 않는다
+	glGenTextures(1, &renderer.shadowMap);
+	glBindTexture(GL_TEXTURE_2D, renderer.shadowMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, ShadowSize, ShadowSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	const float border[] = { 1.f, 1.f, 1.f, 1.f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+	glGenFramebuffers(1, &renderer.shadowFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer.shadowFbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, renderer.shadowMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		printf("shadow framebuffer incomplete\n");
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	LoadEffects(renderer);
 
 	// 모델 이름 = 수치 CSV의 id (assets/obj/<id>.obj). 못 읽으면 큐브로 그린다.
@@ -218,21 +242,40 @@ glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect)
 	return glm::perspective(glm::radians(45.f), aspect, 0.1f, 100.f);
 }
 
+glm::mat4 LightSpaceMatrix()
+{
+	// 판(±3.5)을 다 덮는 직교 투영. 해처럼 먼 빛이라 평행 광선
+	glm::mat4 view = glm::lookAt(LightDir * 10.f, glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+	glm::mat4 projection = glm::ortho(-5.f, 5.f, -5.f, 5.f, 1.f, 20.f);
+	return projection * view;
+}
+
+// 1패스: 빛에서 본 말·몹의 깊이만 그림자 맵에 그린다
+static void RenderShadowMap(const Renderer& renderer, const Game& game)
+{
+	// 그림자 맵에 그리는 동안 같은 텍스처를 읽으려고 묶어 두면 안 되므로 1번 유닛에서 뺀다
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer.shadowFbo);
+	glViewport(0, 0, ShadowSize, ShadowSize);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	SetMat4(renderer.program, "uProjection", glm::mat4(1.f));
+	SetMat4(renderer.program, "uView", LightSpaceMatrix());
+	SetInt(renderer.program, "uShadowOn", 0);
+	shadowPass = true;
+	RenderUnits(renderer, game);
+	RenderMobs(renderer, game);
+	shadowPass = false;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height)
 {
-	glClearColor(0.16f, 0.12f, 0.1f, 1.f);  // 작업대 밖은 어두운 나무색
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glUseProgram(renderer.program);
-	glViewport(0, 0, width, height);
-
-	float aspect = (float)width / height;
-	SetMat4(renderer.program, "uProjection", ProjectionMatrix(renderer, aspect));
-	glm::mat4 view = ViewMatrix(renderer.camera);
-	SetMat4(renderer.program, "uView", view);
-	SetVec3(renderer.program, "uViewPos", glm::vec3(glm::inverse(view)[3]));
-	SetVec3(renderer.program, "uLightDir", glm::normalize(glm::vec3(0.4f, 1.f, 0.6f)));
+	SetVec3(renderer.program, "uLightDir", LightDir);
 	SetFloat(renderer.program, "uFlash", 0.f);
 	SetFloat(renderer.program, "uAlpha", 1.f);
 	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, 1.f, 1.f));
@@ -241,6 +284,25 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	SetInt(renderer.program, "uToon", renderer.toon ? 1 : 0);
 	SetFloat(renderer.program, "uDissolve", 0.f);
 	SetFloat(renderer.program, "uOutline", 0.f);
+	if (renderer.shadows) {
+		RenderShadowMap(renderer, game);
+	}
+
+	// 2패스: 카메라에서 보며, 각 조각을 빛의 좌표로 옮겨 그림자 맵 깊이와 비교한다
+	glClearColor(0.16f, 0.12f, 0.1f, 1.f);  // 작업대 밖은 어두운 나무색
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+	float aspect = (float)width / height;
+	SetMat4(renderer.program, "uProjection", ProjectionMatrix(renderer, aspect));
+	glm::mat4 view = ViewMatrix(renderer.camera);
+	SetMat4(renderer.program, "uView", view);
+	SetVec3(renderer.program, "uViewPos", glm::vec3(glm::inverse(view)[3]));
+	SetMat4(renderer.program, "uLightSpace", LightSpaceMatrix());
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, renderer.shadowMap);
+	glActiveTexture(GL_TEXTURE0);
+	SetInt(renderer.program, "uShadowMap", 1);
+	SetInt(renderer.program, "uShadowOn", renderer.shadows ? 1 : 0);
 
 	RenderBoard(renderer, game);
 	RenderUnits(renderer, game);
@@ -322,7 +384,7 @@ static void DrawFigure(const Renderer& renderer, const Model& model, glm::vec3 b
 
 		// 툰 외곽선: 법선 방향으로 부풀린 모델의 뒷면만 어둡게 그린다.
 		// 앞면은 잘라 내므로 원래 모델 둘레로 삐져나온 뒷면이 테두리처럼 보인다.
-		if (renderer.toon && outline) {
+		if (renderer.toon && outline && !shadowPass) {
 			glEnable(GL_CULL_FACE);
 			glCullFace(GL_FRONT);
 			SetFloat(renderer.program, "uOutline", 0.018f);

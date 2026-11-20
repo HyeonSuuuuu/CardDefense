@@ -40,6 +40,8 @@ struct Renderer
 	Camera camera;
 	bool isOrtho = false;
 	bool toon = true;              // 툰 셰이딩 (T 키로 퐁과 바꿔 보기)
+	bool shadows = true;           // 그림자 맵 (G 키로 끄고 켜기)
+	GLuint shadowFbo = 0, shadowMap = 0;  // 빛에서 본 깊이를 담는 프레임버퍼와 깊이 텍스처
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
 
 	// 판 텍스처
@@ -78,6 +80,7 @@ glm::mat4 ViewMatrix(const Camera& camera);
 glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect);
 void RendererUpdate(Renderer& renderer, const Game& game, float dt);  // 게임 이벤트로 파티클을 만들고 움직인다
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
+glm::mat4 LightSpaceMatrix();  // 월드 → 빛의 클립 좌표 (직교 투영 × 빛 시점)
 void RenderBoard(const Renderer& renderer, const Game& game);
 void RenderUnits(const Renderer& renderer, const Game& game);
 void RenderMobs(const Renderer& renderer, const Game& game);

@@ -25,6 +25,7 @@ void CharCallback(GLFWwindow* window, unsigned int c)
 	case 'r': case 'R': renderer.camera = Camera{}; break;
 	case 'p': renderer.isOrtho = !renderer.isOrtho; break;
 	case 't': case 'T': renderer.toon = !renderer.toon; break;
+	case 'g': case 'G': renderer.shadows = !renderer.shadows; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}
 }

@@ -3,6 +3,7 @@ in vec3 vWorldPos;
 in vec3 vLocalPos;
 in vec3 vNormal;
 in vec2 vUV;
+in vec4 vLightPos;
 uniform vec3 uColor;
 uniform int uUseTexture;     // 1이면 텍스처 색 × uColor
 uniform sampler2D uTexture;
@@ -13,6 +14,8 @@ uniform vec3 uViewPos;       // 카메라 월드 좌표
 uniform float uFlash;        // 0~1, 맞았을 때 흰색으로 섞는 정도
 uniform float uAlpha;        // 불투명도 (텍스처 알파와 곱함)
 uniform float uDissolve;     // 0~1, 사라지는 정도 (0이면 끔)
+uniform sampler2D uShadowMap;
+uniform int uShadowOn;
 out vec4 fragColor;
 
 // ---- fBm 노이즈: 격자 꼭짓점마다 난수를 두고 부드럽게 보간한 값 노이즈를 여러 크기로 겹친다
@@ -46,6 +49,26 @@ float Fbm(vec3 p)
 	return sum / 0.9375;  // 0.5 + 0.25 + 0.125 + 0.0625로 나눠 0~1로
 }
 
+// 0(빛 받음) ~ 1(그림자). 주변 3×3 텍셀을 같이 비교해(PCF) 그림자 가장자리를 부드럽게
+float Shadow(vec3 n)
+{
+	vec3 p = vLightPos.xyz / vLightPos.w * 0.5 + 0.5;  // NDC → 0~1 텍스처 좌표·깊이
+	if (p.z > 1.0) {
+		return 0.0;
+	}
+	// 빛과 비스듬한 면일수록 깊이 오차가 커서 바이어스를 키운다 (자기 그림자 줄무늬 방지)
+	float bias = max(0.004 * (1.0 - dot(n, uLightDir)), 0.0008);
+	vec2 texel = 1.0 / textureSize(uShadowMap, 0);
+	float shadow = 0.0;
+	for (int x = -1; x <= 1; ++x) {
+		for (int y = -1; y <= 1; ++y) {
+			float nearest = texture(uShadowMap, p.xy + vec2(x, y) * texel).r;
+			shadow += p.z - bias > nearest ? 1.0 : 0.0;
+		}
+	}
+	return shadow / 9.0;
+}
+
 void main()
 {
 	// 디졸브: 노이즈 값이 기준보다 작은 조각은 버리고, 경계는 주황색으로 태운다
@@ -75,8 +98,9 @@ void main()
 		}
 		vec3 v = normalize(uViewPos - vWorldPos);
 		vec3 r = reflect(-uLightDir, n);
-		float diffuse = max(dot(n, uLightDir), 0.0);
-		float specular = pow(max(dot(r, v), 0.0), 32.0);
+		float shadow = uShadowOn == 1 ? Shadow(n) : 0.0;
+		float diffuse = max(dot(n, uLightDir), 0.0) * (1.0 - 0.8 * shadow);
+		float specular = pow(max(dot(r, v), 0.0), 32.0) * (1.0 - shadow);
 
 		if (uToon == 1) {
 			// 밝기를 세 단계로 끊고, 반사광은 켜고 끄기만, 가장자리에 테두리 빛

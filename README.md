@@ -21,6 +21,7 @@
 | 입력 | 동작 |
 |---|---|
 | 손패 카드를 왼쪽 버튼으로 끌어 판에 놓기 | 유닛 카드: 안쪽 칸에 말 배치 (말이 있으면 교체). Start/Exit/Retry/Title 카드: 화면 전환 |
+| 주문 카드를 판에 끌어 놓기 | 운석 주사위: 그 칸 주변 몹에 피해(전투 중) / 전투의 북: 주변 3×3 말 공격 속도 ×1.5, 8초 / 칩 주머니: 칩 받기 |
 | 손패 카드를 팩에 끌어 놓기 | 카드 팔기 (1칩) |
 | 팩 클릭 / B | 부스터 구매 (5칩, 정비 중) |
 | 턴 종료 클릭 / Space | 전투 시작 |
@@ -54,6 +55,10 @@
 
 ## 검증 도구
 
+- `tools/bot.h`: 아래 두 도구가 같이 쓰는 자동 플레이 봇
+- 빌드: x64 Native Tools 명령 프롬프트에서 프로젝트 폴더로 이동 후
+  - `cl /EHsc /O2 /utf-8 /ICardDefense\CardDefense /Itools /Iexternal\include tools\balance_sim.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Util\Csv.cpp`
+  - `cl /EHsc /O2 /MD /utf-8 /ICardDefense\CardDefense /Itools /Iexternal\include tools\capture_playthrough.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Renderer.cpp CardDefense\CardDefense\Common.cpp CardDefense\CardDefense\Util\*.cpp /link /LIBPATH:external\lib user32.lib gdi32.lib shell32.lib`
 - `tools/balance_sim.cpp`: 실제 `Game.cpp` 로직으로 자동 플레이 봇이 여러 판을 돌려 승률과 패배 라운드를 센다 (렌더링 없음). 수치를 바꾼 뒤 승률 확인용
 - `tools/capture_playthrough.cpp`: 숨긴 창에서 봇이 한 판을 하며 보고서용 화면을 저장한다. 결과는 `docs/screenshots/`
 
