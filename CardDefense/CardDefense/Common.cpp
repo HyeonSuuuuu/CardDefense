@@ -147,6 +147,47 @@ Mesh CreateCircle(int segments)
 	return CreateMesh(v, {}, GL_LINE_LOOP);
 }
 
+Mesh CreateRoundedTile(float radius, int segments)
+{
+	// 테두리 점: 네 모서리 원 중심 + r(cos t, sin t). t가 0 → 2π로 한 바퀴 돌며 모서리마다 1/4 원씩
+	const float inner = 0.5f - radius;
+	const float cx[4] = { inner, -inner, -inner, inner };
+	const float cz[4] = { inner, inner, -inner, -inner };
+	std::vector<glm::vec2> rim, out;
+	for (int c = 0; c < 4; ++c) {
+		for (int k = 0; k <= segments; ++k) {
+			float t = 1.5707963f * (c + (float)k / segments);
+			glm::vec2 dir(std::cos(t), std::sin(t));
+			rim.push_back(glm::vec2(cx[c], cz[c]) + radius * dir);
+			out.push_back(dir);
+		}
+	}
+	int n = (int)rim.size();
+
+	std::vector<float> v;
+	std::vector<unsigned> idx;
+	// 윗면: 가운데 점에서 부채꼴. UV는 큐브 윗면과 같게 (u = x + 0.5, v = 0.5 - z)
+	v.insert(v.end(), { 0.f, 0.5f, 0.f, 0.f, 1.f, 0.f, 0.5f, 0.5f });
+	for (int k = 0; k < n; ++k) {
+		v.insert(v.end(), { rim[k].x, 0.5f, rim[k].y, 0.f, 1.f, 0.f, rim[k].x + 0.5f, 0.5f - rim[k].y });
+		unsigned a = 1 + k, b = 1 + (k + 1) % n;
+		idx.insert(idx.end(), { 0u, b, a });  // 위에서 보면 t가 줄어드는 쪽이 반시계
+	}
+	// 옆면: 테두리 점마다 위·아래 두 점, 법선은 바깥쪽 (모서리에서는 원의 반지름 방향)
+	unsigned base = (unsigned)(v.size() / VertexFloats);
+	for (int k = 0; k < n; ++k) {
+		float u = (float)k / n;
+		v.insert(v.end(), { rim[k].x, -0.5f, rim[k].y, out[k].x, 0.f, out[k].y, u, 0.f });
+		v.insert(v.end(), { rim[k].x, 0.5f, rim[k].y, out[k].x, 0.f, out[k].y, u, 1.f });
+	}
+	for (int k = 0; k < n; ++k) {
+		unsigned b0 = base + 2 * k, t0 = b0 + 1;
+		unsigned b1 = base + 2 * ((k + 1) % n), t1 = b1 + 1;
+		idx.insert(idx.end(), { b1, b0, t0, b1, t0, t1 });
+	}
+	return CreateMesh(v, idx, GL_TRIANGLES);
+}
+
 Mesh CreateQuad()
 {
 	// 화면 좌표는 y가 아래로 커지고, 텍스처는 위아래를 뒤집어 읽었으므로(v = 0이 그림 아래)

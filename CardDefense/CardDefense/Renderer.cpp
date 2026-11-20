@@ -89,6 +89,7 @@ void RendererInit(Renderer& renderer)
 	renderer.quad = CreateQuad();
 	renderer.disc = CreateDisc(48);
 	renderer.circle = CreateCircle(48);
+	renderer.roundTile = CreateRoundedTile(0.18f, 8);
 	renderer.dotTexture = CreateDotTexture();
 
 	// 그림자 맵: 색 없이 깊이만 받는 프레임버퍼. 맵 밖은 깊이 1(가장 멂)로 읽혀 그림자가 생기지 않는다
@@ -312,7 +313,7 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 }
 
 // 텍스처를 입힌 상자 하나. repeat는 텍스처를 면마다 몇 번 반복할지 (GL_REPEAT로 감싼다)
-static void DrawTexturedBox(const Renderer& renderer, GLuint texture, glm::vec3 center, glm::vec3 size, glm::vec3 color, glm::vec2 repeat)
+static void DrawTexturedBox(const Renderer& renderer, GLuint texture, glm::vec3 center, glm::vec3 size, glm::vec3 color, glm::vec2 repeat, const Mesh* mesh = nullptr)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -321,7 +322,7 @@ static void DrawTexturedBox(const Renderer& renderer, GLuint texture, glm::vec3 
 	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, repeat.x, repeat.y));
 	SetVec3(renderer.program, "uColor", color);
 	glm::mat4 model = glm::translate(glm::mat4(1.f), center);
-	Draw(renderer.program, renderer.cube, glm::scale(model, size));
+	Draw(renderer.program, mesh ? *mesh : renderer.cube, glm::scale(model, size));
 	SetVec4(renderer.program, "uUVRect", glm::vec4(0.f, 0.f, 1.f, 1.f));
 	SetInt(renderer.program, "uUseTexture", 0);
 }
@@ -363,7 +364,7 @@ void RenderBoard(const Renderer& renderer, const Game& game)
 				color = CanPlayCard(game, renderer.dragCard, i, j) ? hoverColor : blockedColor;
 			}
 			GLuint texture = IsPathTile(i, j) ? renderer.stoneTexture : renderer.grassTexture;
-			DrawTexturedBox(renderer, texture, position, size, color, glm::vec2(1.f));
+			DrawTexturedBox(renderer, texture, position, size, color, glm::vec2(1.f), &renderer.roundTile);
 		}
 	}
 }

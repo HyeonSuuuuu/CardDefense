@@ -34,7 +34,7 @@ struct Particle
 struct Renderer
 {
 	GLuint program = 0;
-	Mesh axes, cube, quad, disc, circle;
+	Mesh axes, cube, quad, disc, circle, roundTile;
 	std::vector<Model> unitModels;  // units.csv 순서
 	std::vector<Model> mobModels;   // mobs.csv 순서
 	Camera camera;
