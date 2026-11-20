@@ -69,6 +69,7 @@ struct Renderer
 		float delay = 0.f;   // 한 팩에서 여러 장이 나오면 차례로 나오게
 	};
 	std::vector<PackAnim> packAnims;
+	int packHandSize = 0;  // 마지막으로 팩을 산 직후의 손패 수
 
 	// UI 입력 상태 (main이 채운다)
 	glm::vec2 mouse = glm::vec2(0.f);  // 창 좌표

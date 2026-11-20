@@ -174,6 +174,7 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 			anim.relic = event.type == EventType::PackRelic ? event.value : -1;
 			anim.delay = 0.25f * packCount++;
 			renderer.packAnims.push_back(anim);
+			renderer.packHandSize = (int)game.hand.size();
 			continue;
 		}
 		int k = (int)event.type;
@@ -205,7 +206,9 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 	for (int k = (int)renderer.packAnims.size() - 1; k >= 0; --k) {
 		Renderer::PackAnim& a = renderer.packAnims[k];
 		a.age += dt;
-		if (a.age - a.delay >= PackAnimTime || game.phase != Phase::Prepare) {
+		// 연출 중에 손패를 쓰거나 팔면 번호가 밀리므로 그때는 연출을 끝낸다
+		bool handChanged = a.handIndex >= (int)game.hand.size() || (int)game.hand.size() != renderer.packHandSize;
+		if (a.age - a.delay >= PackAnimTime || game.phase != Phase::Prepare || (a.handIndex >= 0 && handChanged)) {
 			renderer.packAnims.erase(renderer.packAnims.begin() + k);
 		}
 	}
@@ -749,6 +752,9 @@ static void RenderPackAnims(const Renderer& renderer, const Game& game, int widt
 			continue;
 		}
 		bool relic = a.handIndex < 0;
+		if (!relic && a.handIndex >= count) {
+			continue;
+		}
 		Rect to = relic ? RelicSlotRect(game, a.relic, s) : HandCardRect(a.handIndex, count, width, height);
 		Rect from = Rect{ pack.x + pack.w * 0.5f - to.w * 0.5f, pack.y - to.h * 0.6f, to.w, to.h };
 		if (relic) {
@@ -845,7 +851,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	if (playing) {
 		Rect pack = PackRect(width, height);
 		bool canBuy = game.phase == Phase::Prepare && game.chips >= gameData.boosterPrice && (int)game.hand.size() + PackCardCount(game) <= MaxHand;
-		bool sellTarget = renderer.dragCard >= 0 && game.hand[renderer.dragCard] >= 0;  // 카드를 끌어 오면 판다
+		bool sellTarget = renderer.dragCard >= 0 && renderer.dragCard < (int)game.hand.size() && game.hand[renderer.dragCard] >= 0;  // 카드를 끌어 오면 판다
 		glm::vec3 packColor = canBuy || sellTarget ? white : dim;
 		if (sellTarget && Contains(pack, renderer.mouse)) {
 			packColor = glm::vec3(1.f, 0.85f, 0.5f);

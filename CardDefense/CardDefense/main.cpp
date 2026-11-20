@@ -177,7 +177,12 @@ int main()
 			dt = 0.1f;  // 창 드래그·중단점 뒤 큰 dt로 몹이 순간이동하지 않게
 		}
 
+		Phase before = game.phase;
 		GameUpdate(game, dt);
+		// 끄는 중에 결과 화면으로 넘어가면 손패가 바뀌므로 끌기를 취소한다 (다른 카드가 놓이지 않게)
+		if (game.phase != before) {
+			renderer.dragCard = -1;
+		}
 		RendererUpdate(renderer, game, dt);
 		game.events.clear();  // 연출이 다 읽었으니 비운다
 		UpdateHover(window);
