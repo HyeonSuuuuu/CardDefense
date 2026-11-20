@@ -846,12 +846,6 @@ static void RenderTransition(const Renderer& renderer, int width, int height)
 	const glm::vec3 cream(0.98f, 0.96f, 0.92f), amber(0.91f, 0.64f, 0.24f);
 	DrawScreenDisc(renderer, o, radius, amber, alpha);
 	DrawScreenDisc(renderer, o, std::max(0.f, radius - 18.f * UiScale(height)), cream, alpha);
-	// 한가운데 로고가 잠깐 비친다
-	if (t.time >= TransitionIn * 0.7f) {
-		float s = UiScale(height);
-		float logoAlpha = alpha * Clamp01((t.time - TransitionIn * 0.7f) / (TransitionIn * 0.3f));
-		DrawRect(renderer, renderer.logo, Rect{ width * 0.5f - 280.f * s, height * 0.5f - 105.f * s, 560.f * s, 210.f * s }, glm::vec3(1.f), logoAlpha);
-	}
 }
 
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
