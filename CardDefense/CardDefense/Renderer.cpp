@@ -152,6 +152,9 @@ void RendererInit(Renderer& renderer)
 	renderer.goldPack = LoadTexture("assets/ui/pack_gold.png");
 	renderer.betOn = LoadTexture("assets/ui/toggle_bet_on.png");
 	renderer.betOff = LoadTexture("assets/ui/toggle_bet_off.png");
+	for (const RoundModifier& m : gameData.modifiers) {
+		renderer.modifierBanners.push_back(LoadTexture(("assets/ui/round_" + m.id + ".png").c_str()));
+	}
 	renderer.startCard = LoadTexture("assets/cards/card_sys_start.png");
 	renderer.exitCard = LoadTexture("assets/cards/card_sys_exit.png");
 	renderer.retryCard = LoadTexture("assets/cards/card_sys_retry.png");
@@ -956,6 +959,13 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		DrawRect(renderer, renderer.chipIcon, Rect{ width - 150.f * s, 10.f * s, 44.f * s, 44.f * s }, white, 1.f);
 		snprintf(text, sizeof(text), "%d", game.chips);
 		DrawNumber(renderer, text, width - 98.f * s, 10.f * s, 44.f * s, 0.f, white);
+	}
+
+	// 이번 라운드 특성: 위 막대 아래 가운데. 정비 중에는 크게 보여 베팅을 정할 수 있게, 전투 중에는 작게
+	if (playing && game.modifier < (int)renderer.modifierBanners.size()) {
+		float bw = (game.phase == Phase::Prepare ? 400.f : 280.f) * s;
+		float bh = bw * 120.f / 640.f;
+		DrawRect(renderer, renderer.modifierBanners[game.modifier], Rect{ width * 0.5f - bw * 0.5f, 70.f * s, bw, bh }, white, 1.f);
 	}
 
 	// 유물: 위 막대 아래 왼쪽에 종류마다 아이콘 하나, 2개 이상이면 개수

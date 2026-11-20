@@ -210,6 +210,23 @@ bool LoadGameData()
 		d.relics.push_back(r);
 	}
 
+	if (!LoadCsv("Data/modifiers.csv", t)) {
+		return false;
+	}
+	for (auto& row : t.rows) {
+		RoundModifier m;
+		m.id = row[CsvColumn(t, "id")];
+		m.weight = std::stof(row[CsvColumn(t, "weight")]);
+		m.count = std::stof(row[CsvColumn(t, "count")]);
+		m.hp = std::stof(row[CsvColumn(t, "hp")]);
+		m.speed = std::stof(row[CsvColumn(t, "speed")]);
+		m.chips = std::stof(row[CsvColumn(t, "chips")]);
+		d.modifiers.push_back(m);
+	}
+	if (d.modifiers.empty()) {
+		d.modifiers.push_back(RoundModifier{ "normal" });
+	}
+
 	if (!LoadCsv("Data/pack_outcomes.csv", t)) {
 		return false;
 	}
@@ -271,11 +288,31 @@ static void EnterResult(Game& game, bool won)
 	game.hand = { CardRetry, CardTitle };
 }
 
+static int RandomUnit(int tier);
+
 void StartGame(Game& game)
 {
 	game = Game{};
 	game.phase = Phase::Prepare;
-	game.hand = gameData.starterUnits;
+	// 시작 손패: 일반 말 3장을 무작위로 (같은 클래스가 겹칠 수도 있다)
+	for (int k = 0; k < (int)gameData.starterUnits.size(); ++k) {
+		game.hand.push_back(RandomUnit(0));
+	}
+	RollModifier(game);
+}
+
+void RollModifier(Game& game)
+{
+	std::vector<float> w;
+	for (const RoundModifier& m : gameData.modifiers) {
+		w.push_back(m.weight);
+	}
+	game.modifier = std::discrete_distribution<int>(w.begin(), w.end())(rng);
+}
+
+const RoundModifier& CurrentModifier(const Game& game)
+{
+	return gameData.modifiers[game.modifier];
 }
 
 void GameUpdate(Game& game, float dt)
@@ -659,10 +696,12 @@ void EndTurn(Game& game)
 	const RoundData& r = gameData.rounds[game.round - 1];
 	std::vector<std::pair<float, int>> order;
 	for (int type = 0; type < (int)r.counts.size(); ++type) {
-		int count = r.counts[type];
-		if (game.betRound && gameData.mobs[type].fixedHp <= 0.f) {
-			count = (int)std::round(count * gameData.betMobMultiplier);
+		// 라운드 특성과 베팅은 보스(고정 체력 몹)를 뺀 몹 수를 늘린다
+		float count = (float)r.counts[type];
+		if (gameData.mobs[type].fixedHp <= 0.f) {
+			count *= CurrentModifier(game).count * (game.betRound ? gameData.betMobMultiplier : 1.f);
 		}
+		count = std::round(count);
 		for (int k = 0; k < count; ++k) {
 			order.push_back({ (k + 0.5f) / count, type });
 		}
@@ -698,7 +737,7 @@ void SpawnMobs(Game& game, float dt)
 		Mob m;
 		m.type = game.spawnQueue[game.spawnedCount];
 		const MobData& md = gameData.mobs[m.type];
-		m.hp = md.fixedHp > 0.f ? md.fixedHp : std::round(r.baseHp * md.hpScale);
+		m.hp = md.fixedHp > 0.f ? md.fixedHp : std::round(r.baseHp * md.hpScale * CurrentModifier(game).hp);
 		m.maxHp = m.hp;
 		game.mobs.push_back(m);
 		++game.spawnedCount;
@@ -708,7 +747,9 @@ void SpawnMobs(Game& game, float dt)
 void UpdateMobs(Game& game, float dt)
 {
 	for (Mob& m : game.mobs) {
-		m.pathPos += gameData.mobs[m.type].speed * dt;
+		const MobData& md = gameData.mobs[m.type];
+		float speed = md.fixedHp > 0.f ? 1.f : CurrentModifier(game).speed;
+		m.pathPos += md.speed * speed * dt;
 	}
 }
 
@@ -759,7 +800,11 @@ void UpdateUnits(Game& game, float dt)
 	// 죽은 몹 제거, 칩 지급
 	for (int k = (int)game.mobs.size() - 1; k >= 0; --k) {
 		if (game.mobs[k].hp <= 0.f) {
-			game.chips += gameData.mobs[game.mobs[k].type].chips;
+			// 칩 배율의 소수 부분은 모아 두었다가 1이 넘으면 준다
+			game.chipCarry += gameData.mobs[game.mobs[k].type].chips * CurrentModifier(game).chips;
+			int whole = (int)game.chipCarry;
+			game.chips += whole;
+			game.chipCarry -= whole;
 			++game.kills;
 			game.dying.push_back(game.mobs[k]);
 			game.events.push_back({ EventType::Death, PathPosition(game.mobs[k].pathPos) + glm::vec3(0.f, 0.3f, 0.f) });
@@ -786,6 +831,7 @@ void CheckRoundEnd(Game& game)
 		}
 		else {
 			++game.round;
+			RollModifier(game);
 			game.phase = Phase::Prepare;
 		}
 	}
@@ -819,6 +865,7 @@ static void GoToRound(Game& game, int round)
 	game.spawnedCount = 0;
 	game.timer = 0.f;
 	game.round = std::min(round, MaxRound);
+	RollModifier(game);
 	game.betRound = false;
 	game.phase = Phase::Prepare;
 }
