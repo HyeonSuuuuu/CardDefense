@@ -61,6 +61,7 @@
   - `cl /EHsc /O2 /utf-8 /ICardDefense\CardDefense /Itools /Iexternal\include tools\balance_sim.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Util\Csv.cpp`
   - `cl /EHsc /O2 /MD /utf-8 /ICardDefense\CardDefense /Itools /Iexternal\include tools\capture_playthrough.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Renderer.cpp CardDefense\CardDefense\Common.cpp CardDefense\CardDefense\Util\*.cpp /link /LIBPATH:external\lib user32.lib gdi32.lib shell32.lib`
 - `tools/balance_sim.cpp`: 실제 `Game.cpp` 로직으로 자동 플레이 봇이 여러 판을 돌려 승률과 패배 라운드를 센다 (렌더링 없음). 수치를 바꾼 뒤 승률 확인용
+- `tools/fuzz_test.cpp`: 무작위 조작 퍼즈 테스트. Debug 런타임으로 빌드: `cl /EHsc /Od /MDd /D_DEBUG /DGLFW_DLL /utf-8 /ICardDefense\CardDefense /Iexternal\include tools\fuzz_test.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Renderer.cpp CardDefense\CardDefense\Common.cpp CardDefense\CardDefense\Util\*.cpp /link /LIBPATH:external\lib opengl32.lib glew32.lib glfw3dll.lib`
 - `tools/capture_playthrough.cpp`: 숨긴 창에서 봇이 한 판을 하며 보고서용 화면을 저장한다. 결과는 `docs/screenshots/`
 
 ## 빌드 환경
