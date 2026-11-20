@@ -1,12 +1,12 @@
 # 팩 결과와 가중치(합이 100일 필요는 없음). 출처: 밸런스 3장의 두 단계 확률을 곱해 펼침
 # outcome: relic / unit:등급(0~2, 클래스는 무작위) / spell:주문 id / promote(승격 카드)
-# 예) 부스터 유닛 63% × 일반 75% = 47.25
+# 예) 부스터 유닛 63% × 일반 75% = 47.25 (11/21 운석이 너무 자주 나와 24.5 → 12로 낮추고 12.5를 유닛 등급 비율대로 나눔)
 pack,outcome,weight
 booster,relic,2
-booster,unit:0,47.25
-booster,unit:1,13.86
-booster,unit:2,1.89
-booster,spell:meteor_dice,24.5
+booster,unit:0,56.62
+booster,unit:1,16.61
+booster,unit:2,2.27
+booster,spell:meteor_dice,12
 booster,spell:battle_drum,8.75
 booster,spell:chip_pouch,1.75
 gold_booster,relic,8
