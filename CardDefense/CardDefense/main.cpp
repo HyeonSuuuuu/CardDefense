@@ -26,6 +26,7 @@ void CharCallback(GLFWwindow* window, unsigned int c)
 	case 'p': renderer.isOrtho = !renderer.isOrtho; break;
 	case 't': case 'T': renderer.toon = !renderer.toon; break;
 	case 'g': case 'G': renderer.shadows = !renderer.shadows; break;
+	case 'f': case 'F': renderer.speed = renderer.speed % 3 + 1; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}
 }
@@ -88,6 +89,9 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 		}
 		else if (Contains(EndTurnRect(width, height), mouse)) {
 			EndTurn(game);
+		}
+		else if (Contains(SpeedRect(width, height), mouse) && (game.phase == Phase::Prepare || game.phase == Phase::Battle)) {
+			renderer.speed = renderer.speed % 3 + 1;
 		}
 	}
 	else if (action == GLFW_RELEASE && renderer.dragCard >= 0) {
@@ -184,7 +188,10 @@ int main()
 		}
 
 		Phase before = game.phase;
-		GameUpdate(game, dt);
+		// 배속: dt를 키우지 않고 같은 dt로 여러 번 진행해야 공격·충돌을 건너뛰지 않는다
+		for (int step = 0; step < renderer.speed; ++step) {
+			GameUpdate(game, dt);
+		}
 		// 끄는 중에 결과 화면으로 넘어가면 손패가 바뀌므로 끌기를 취소한다 (다른 카드가 놓이지 않게)
 		if (game.phase != before) {
 			renderer.dragCard = -1;

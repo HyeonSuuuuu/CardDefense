@@ -44,6 +44,7 @@ struct Renderer
 	bool isOrtho = false;
 	bool toon = true;              // 툰 셰이딩 (T 키로 퐁과 바꿔 보기)
 	bool shadows = true;           // 그림자 맵 (G 키로 끄고 켜기)
+	int speed = 1;                 // 게임 배속 1~3 (배속 버튼, F 키)
 	GLuint shadowFbo = 0, shadowMap = 0;  // 빛에서 본 깊이를 담는 프레임버퍼와 깊이 텍스처
 	int hoverI = -1, hoverJ = -1;  // 마우스가 가리키는 칸 (-1이면 없음)
 
@@ -108,6 +109,7 @@ Rect HandCardRect(int index, int count, int width, int height);
 int HandCardAt(const Game& game, glm::vec2 p, int width, int height);  // 그 위치의 손패 카드 번호, 없으면 -1
 Rect PackRect(int width, int height);
 Rect EndTurnRect(int width, int height);
+Rect SpeedRect(int width, int height);  // 배속 버튼 (턴 종료 버튼 위)
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height);
 void StartTransition(Renderer& renderer, glm::vec2 origin, int handIndex, int i, int j);
 bool TransitionCovered(const Renderer& renderer);  // 화면이 다 덮였고 아직 카드를 안 썼으면 true

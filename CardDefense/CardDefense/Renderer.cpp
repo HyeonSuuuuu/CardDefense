@@ -673,6 +673,12 @@ Rect EndTurnRect(int width, int height)
 	return Rect{ width - 254.f * s, height - 110.f * s, 230.f * s, 80.f * s };
 }
 
+Rect SpeedRect(int width, int height)
+{
+	float s = UiScale(height);
+	return Rect{ width - 254.f * s, height - 180.f * s, 110.f * s, 58.f * s };
+}
+
 // 텍스처(없으면 단색) 사각형 하나
 static void DrawRect(const Renderer& renderer, GLuint texture, const Rect& r, glm::vec3 color, float alpha)
 {
@@ -932,6 +938,14 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		bool canEnd = game.phase == Phase::Prepare;
 		bool pressed = canEnd && Contains(button, renderer.mouse);
 		DrawRect(renderer, renderer.endTurn, button, canEnd ? (pressed ? glm::vec3(1.1f) : white) : dim, 1.f);
+
+		// 배속 버튼: 1배는 흰 글자, 빠를 때는 금색
+		Rect speed = SpeedRect(width, height);
+		bool overSpeed = Contains(speed, renderer.mouse);
+		DrawRect(renderer, 0, speed, overSpeed ? glm::vec3(0.25f, 0.29f, 0.36f) : glm::vec3(0.17f, 0.2f, 0.25f), 0.9f);
+		snprintf(text, sizeof(text), "x%d", renderer.speed);
+		glm::vec3 speedColor = renderer.speed > 1 ? glm::vec3(1.f, 0.78f, 0.35f) : white;
+		DrawNumber(renderer, text, speed.x + speed.w * 0.5f, speed.y + 7.f * s, 44.f * s, 0.5f, speedColor);
 	}
 
 	// 손패: 마우스가 올라간 카드는 조금 올리고, 끄는 카드는 마우스를 따라간다
