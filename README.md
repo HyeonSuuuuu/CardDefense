@@ -26,6 +26,7 @@
 | 턴 종료 클릭 / Space | 전투 시작 |
 | 오른쪽 버튼 드래그 / 휠 / R | 카메라 회전 / 줌 / 처음 시점 |
 | T | 툰 셰이딩 ↔ 퐁 셰이딩 |
+| F1 / F2 / F3 / F4 | 발표용: 다음 라운드로 / 칩 +50 / 보스 라운드(10)로 / 소환·피격·처치 이펙트 다시 보기 (게임 중에만) |
 | ESC, Q | 종료 |
 
 ## 폴더 구조
@@ -44,6 +45,17 @@
 | `tools/` | 에셋 변환·시안 생성용 Python 스크립트. `compose_cards.py`: 카드 틀 + 그림 + 이름 → `assets/cards/card_*.png` |
 | `docs/` | 기획 문서 |
 | `external/` | GLEW·GLFW·GLM 헤더(`include/gl/`), lib, DLL(`bin/`, 빌드할 때 exe 폴더로 복사됨) |
+
+## 제출 묶음 만들기
+
+1. Visual Studio에서 x64 / Release로 빌드한다.
+2. `python tools/make_submission.py` → `제출/CardDefense-제출/`에 `실행파일/`(exe, 셰이더, Data, assets, GLEW·GLFW DLL, VC++ 런타임 DLL)과 `프로젝트/`(솔루션·소스, 게임 assets, external)가 생긴다.
+3. 보고서·발표 자료를 넣고 압축해 e-class에 낸다.
+
+## 검증 도구
+
+- `tools/balance_sim.cpp`: 실제 `Game.cpp` 로직으로 자동 플레이 봇이 여러 판을 돌려 승률과 패배 라운드를 센다 (렌더링 없음). 수치를 바꾼 뒤 승률 확인용
+- `tools/capture_playthrough.cpp`: 숨긴 창에서 봇이 한 판을 하며 보고서용 화면을 저장한다. 결과는 `docs/screenshots/`
 
 ## 빌드 환경
 

@@ -471,3 +471,64 @@ void CheckRoundEnd(Game& game)
 		EnterResult(game, false);
 	}
 }
+
+// ========================================================================
+// 발표용 단축키
+//   게임 중(정비·전투)에만 동작한다
+// ========================================================================
+
+static bool InGame(const Game& game)
+{
+	return game.phase == Phase::Prepare || game.phase == Phase::Battle;
+}
+
+// 남은 몹을 없애고 다음 라운드 정비로 간다 (클리어 보너스는 주지 않는다)
+static void GoToRound(Game& game, int round)
+{
+	game.mobs.clear();
+	game.spawnQueue.clear();
+	game.spawnedCount = 0;
+	game.timer = 0.f;
+	game.round = std::min(round, MaxRound);
+	game.phase = Phase::Prepare;
+}
+
+void DemoNextRound(Game& game)
+{
+	if (InGame(game)) {
+		GoToRound(game, game.round + 1);
+	}
+}
+
+void DemoAddChips(Game& game)
+{
+	if (InGame(game)) {
+		game.chips += 50;
+	}
+}
+
+void DemoBossRound(Game& game)
+{
+	if (InGame(game)) {
+		GoToRound(game, MaxRound);
+	}
+}
+
+void DemoReplayEffects(Game& game)
+{
+	if (!InGame(game)) {
+		return;
+	}
+	// 소환 먼지: 가운데 칸 / 피격: 앞쪽 길 / 처치: 해골 병사 하나가 디졸브되며 사라짐
+	game.events.push_back({ EventType::Summon, TileCenter(2, 2) });
+	glm::vec3 hitPos = PathPosition(12.f) + glm::vec3(0.f, 0.3f, 0.f);
+	game.events.push_back({ EventType::Hit, hitPos });
+
+	Mob dead;
+	dead.type = 0;
+	dead.pathPos = 13.f;
+	dead.hp = 0.f;
+	dead.maxHp = 1.f;
+	game.dying.push_back(dead);
+	game.events.push_back({ EventType::Death, PathPosition(dead.pathPos) + glm::vec3(0.f, 0.3f, 0.f) });
+}

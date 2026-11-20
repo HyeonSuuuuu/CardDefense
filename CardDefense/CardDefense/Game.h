@@ -157,3 +157,9 @@ void SpawnMobs(Game& game, float dt);
 void UpdateMobs(Game& game, float dt);
 void UpdateUnits(Game& game, float dt);
 void CheckRoundEnd(Game& game);                          // 라운드 클리어·승패 판정
+
+// 발표용 단축키 (제안서 1장 조작표의 F1~F4). 3~5분 데모에서 10라운드를 다 할 수 없어서 둔다.
+void DemoNextRound(Game& game);    // F1: 지금 라운드를 깬 것으로 하고 다음 라운드 정비로
+void DemoAddChips(Game& game);     // F2: 칩 50개
+void DemoBossRound(Game& game);    // F3: 10라운드(보스) 정비로
+void DemoReplayEffects(Game& game); // F4: 소환·피격·처치 이펙트를 판 위에 한 번씩 보여 준다

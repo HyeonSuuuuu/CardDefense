@@ -59,6 +59,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(window, true); break;
 	case GLFW_KEY_SPACE: EndTurn(game); break;
 	case GLFW_KEY_B: BuyPack(game); break;
+	// 발표용
+	case GLFW_KEY_F1: DemoNextRound(game); break;
+	case GLFW_KEY_F2: DemoAddChips(game); break;
+	case GLFW_KEY_F3: DemoBossRound(game); break;
+	case GLFW_KEY_F4: DemoReplayEffects(game); break;
 	}
 }
 
