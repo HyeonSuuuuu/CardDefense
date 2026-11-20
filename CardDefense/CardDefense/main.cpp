@@ -50,7 +50,8 @@ void CursorPosCallback(GLFWwindow* window, double x, double y)
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (action == GLFW_RELEASE) {
+	// 누르고 있을 때의 반복 입력(GLFW_REPEAT)은 무시한다: B를 누르고 있으면 팩이 여러 개 사지는 문제
+	if (action != GLFW_PRESS) {
 		return;
 	}
 	// 마우스 조작의 단축키

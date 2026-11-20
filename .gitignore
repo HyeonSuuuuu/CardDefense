@@ -31,3 +31,8 @@ assets/design_preview/*.svg
 
 # Blender 자동 백업
 *.blend1
+
+# 제출용 묶음 (tools/make_submission.py로 만든다)
+제출/
+
+*.exe
