@@ -55,6 +55,7 @@ struct Renderer
 	std::vector<GLuint> unitCards;  // units.csv 순서
 	std::vector<GLuint> spellCards; // spells.csv 순서
 	std::vector<GLuint> relicIcons; // relics.csv 순서
+	std::vector<GLuint> relicTips;  // 아이콘에 마우스를 올리면 뜨는 설명 리본 (assets/ui/tip_<id>.png)
 	GLuint cardBack = 0, promoteCard = 0, goldPack = 0;
 	GLuint startCard = 0, exitCard = 0, retryCard = 0, titleCard = 0;
 	GLuint digits = 0, chipIcon = 0, booster = 0, endTurn = 0, logo = 0, victory = 0, defeat = 0;

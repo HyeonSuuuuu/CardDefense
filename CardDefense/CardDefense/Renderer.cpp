@@ -146,6 +146,7 @@ void RendererInit(Renderer& renderer)
 			file = "crest_" + file.substr(0, bar);
 		}
 		renderer.relicIcons.push_back(LoadTexture(("assets/ui/relic_" + file + ".png").c_str()));
+		renderer.relicTips.push_back(LoadTexture(("assets/ui/tip_" + rd.id + ".png").c_str()));
 	}
 	renderer.cardBack = LoadTexture("assets/cards/card_back.png");
 	renderer.promoteCard = LoadTexture("assets/cards/card_promote.png");
@@ -1052,6 +1053,21 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	}
 
 	RenderPackAnims(renderer, game, width, height);
+	// 유물 아이콘에 마우스를 올리면 아래에 설명 리본 (다른 UI보다 위에 그린다)
+	if (playing && renderer.dragCard < 0) {
+		for (int r = 0; r < (int)gameData.relics.size(); ++r) {
+			if (std::count(game.relics.begin(), game.relics.end(), r) == 0) {
+				continue;
+			}
+			Rect slot = RelicSlotRect(game, r, s);
+			if (Contains(slot, renderer.mouse) && r < (int)renderer.relicTips.size()) {
+				float tw = 340.f * s, th = tw * 130.f / 560.f;
+				float tx = std::min(slot.x, width - tw - 8.f * s);
+				DrawRect(renderer, renderer.relicTips[r], Rect{ tx, slot.y + slot.h + 6.f * s, tw, th }, white, 1.f);
+			}
+		}
+	}
+
 	RenderJackpot(renderer, width, height);
 	RenderTransition(renderer, width, height);
 
