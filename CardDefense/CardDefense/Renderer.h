@@ -12,6 +12,9 @@ struct Rect
 
 constexpr float PackAnimTime = 0.7f;  // 카드팩에서 나온 카드가 손패에 들어가기까지(초)
 
+// 화면 전환: 카드를 놓은 곳에서 원이 퍼져 화면을 덮고(In), 잠깐 멈췄다가(Hold), 걷힌다(Out)
+constexpr float TransitionIn = 0.45f, TransitionHold = 0.12f, TransitionOut = 0.5f;
+
 // 파티클 한 종류의 수치 (Data/effects.csv 한 줄)
 struct EffectData
 {
@@ -71,6 +74,17 @@ struct Renderer
 	std::vector<PackAnim> packAnims;
 	int packHandSize = 0;  // 마지막으로 팩을 산 직후의 손패 수
 
+	// 화면 전환 카드(Start/Exit/Retry/Title)를 놓았을 때. 화면이 다 덮이면 main이 카드를 실제로 쓴다
+	struct Transition
+	{
+		bool active = false;
+		bool applied = false;  // 카드를 이미 썼는지
+		float time = 0.f;
+		glm::vec2 origin = glm::vec2(0.f);  // 원이 퍼지기 시작하는 창 좌표
+		int handIndex = -1, i = -1, j = -1;
+	};
+	Transition transition;
+
 	// UI 입력 상태 (main이 채운다)
 	glm::vec2 mouse = glm::vec2(0.f);  // 창 좌표
 	int dragCard = -1;                 // 끌고 있는 손패 카드 번호 (-1이면 없음)
@@ -95,3 +109,5 @@ int HandCardAt(const Game& game, glm::vec2 p, int width, int height);  // 그 �
 Rect PackRect(int width, int height);
 Rect EndTurnRect(int width, int height);
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height);
+void StartTransition(Renderer& renderer, glm::vec2 origin, int handIndex, int i, int j);
+bool TransitionCovered(const Renderer& renderer);  // 화면이 다 덮였고 아직 카드를 안 썼으면 true

@@ -203,6 +203,13 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 		}
 	}
 
+	if (renderer.transition.active) {
+		renderer.transition.time += dt;
+		if (renderer.transition.time >= TransitionIn + TransitionHold + TransitionOut) {
+			renderer.transition.active = false;
+		}
+	}
+
 	for (int k = (int)renderer.packAnims.size() - 1; k >= 0; --k) {
 		Renderer::PackAnim& a = renderer.packAnims[k];
 		a.age += dt;
@@ -781,6 +788,72 @@ static void RenderPackAnims(const Renderer& renderer, const Game& game, int widt
 	}
 }
 
+void StartTransition(Renderer& renderer, glm::vec2 origin, int handIndex, int i, int j)
+{
+	Renderer::Transition& t = renderer.transition;
+	t = Renderer::Transition{};
+	t.active = true;
+	t.origin = origin;
+	t.handIndex = handIndex;
+	t.i = i;
+	t.j = j;
+}
+
+bool TransitionCovered(const Renderer& renderer)
+{
+	const Renderer::Transition& t = renderer.transition;
+	return t.active && !t.applied && t.time >= TransitionIn;
+}
+
+// 화면 좌표의 원판: XZ 평면 원판을 x축으로 90도 세워 화면(XY)에 눕힌다
+static void DrawScreenDisc(const Renderer& renderer, glm::vec2 center, float radius, glm::vec3 color, float alpha)
+{
+	glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(center, 0.f));
+	model = glm::rotate(model, glm::radians(90.f), glm::vec3(1.f, 0.f, 0.f));
+	model = glm::scale(model, glm::vec3(radius, 1.f, radius));
+	SetInt(renderer.program, "uUseTexture", 0);
+	SetVec3(renderer.program, "uColor", color);
+	SetFloat(renderer.program, "uAlpha", alpha);
+	Draw(renderer.program, renderer.disc, model);
+}
+
+// 화면 전환: 금색 테두리를 두른 크림색 원이 놓은 곳에서 퍼져 덮고, 다 덮인 뒤 커지며 투명해진다
+static void RenderTransition(const Renderer& renderer, int width, int height)
+{
+	const Renderer::Transition& t = renderer.transition;
+	if (!t.active) {
+		return;
+	}
+	// 어느 점에서 퍼져도 화면 네 모서리를 다 덮는 반지름
+	glm::vec2 o = t.origin;
+	float cover = 0.f;
+	const glm::vec2 corners[4] = { { 0.f, 0.f }, { (float)width, 0.f }, { 0.f, (float)height }, { (float)width, (float)height } };
+	for (const glm::vec2& c : corners) {
+		cover = std::max(cover, glm::distance(o, c));
+	}
+
+	float radius, alpha;
+	if (t.time < TransitionIn) {
+		float k = EaseInOutQuad(t.time / TransitionIn);
+		radius = cover * 1.08f * k;
+		alpha = 1.f;
+	}
+	else {
+		float k = Clamp01((t.time - TransitionIn - TransitionHold) / TransitionOut);
+		radius = cover * (1.08f + 0.3f * k);
+		alpha = 1.f - EaseOutCubic(k);
+	}
+	const glm::vec3 cream(0.98f, 0.96f, 0.92f), amber(0.91f, 0.64f, 0.24f);
+	DrawScreenDisc(renderer, o, radius, amber, alpha);
+	DrawScreenDisc(renderer, o, std::max(0.f, radius - 18.f * UiScale(height)), cream, alpha);
+	// 한가운데 로고가 잠깐 비친다
+	if (t.time >= TransitionIn * 0.7f) {
+		float s = UiScale(height);
+		float logoAlpha = alpha * Clamp01((t.time - TransitionIn * 0.7f) / (TransitionIn * 0.3f));
+		DrawRect(renderer, renderer.logo, Rect{ width * 0.5f - 280.f * s, height * 0.5f - 105.f * s, 560.f * s, 210.f * s }, glm::vec3(1.f), logoAlpha);
+	}
+}
+
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 {
 	// 깊이 없이 그린 순서대로 덮고, 알파로 섞는다
@@ -871,7 +944,8 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	int count = (int)game.hand.size();
 	int hovered = renderer.dragCard < 0 ? HandCardAt(game, renderer.mouse, width, height) : -1;
 	for (int k = 0; k < count; ++k) {
-		if (k == renderer.dragCard || IsPackAnimating(renderer, k)) {
+		bool usedCard = renderer.transition.active && !renderer.transition.applied && k == renderer.transition.handIndex;
+		if (k == renderer.dragCard || IsPackAnimating(renderer, k) || usedCard) {
 			continue;
 		}
 		Rect r = HandCardRect(k, count, width, height);
@@ -892,6 +966,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	}
 
 	RenderPackAnims(renderer, game, width, height);
+	RenderTransition(renderer, width, height);
 
 	SetFloat(renderer.program, "uAlpha", 1.f);
 	SetInt(renderer.program, "uUseTexture", 0);

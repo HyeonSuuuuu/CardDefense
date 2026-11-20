@@ -71,7 +71,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 // 왼쪽 버튼: 손패 카드를 눌러 끌고, 판 위에서 놓으면 사용한다. 팩·턴 종료 버튼은 클릭.
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button != GLFW_MOUSE_BUTTON_LEFT) {
+	if (button != GLFW_MOUSE_BUTTON_LEFT || renderer.transition.active) {
 		return;
 	}
 	int width, height;
@@ -98,12 +98,18 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 			SellCard(game, renderer.dragCard);
 		}
 		else if (renderer.hoverI >= 0) {
-			PlayCard(game, renderer.dragCard, renderer.hoverI, renderer.hoverJ);
+			int handIndex = renderer.dragCard;
+			int i = renderer.hoverI, j = renderer.hoverJ;
+			if (game.hand[handIndex] < 0 && CanPlayCard(game, handIndex, i, j)) {
+				// 화면 전환 카드: 원이 화면을 다 덮은 뒤에 카드를 쓴다 (main 루프)
+				StartTransition(renderer, mouse, handIndex, i, j);
+				game.events.push_back({ EventType::Summon, TileCenter(i, j) });
+			}
+			else {
+				PlayCard(game, handIndex, i, j);
+			}
 		}
 		renderer.dragCard = -1;
-		if (game.quit) {
-			glfwSetWindowShouldClose(window, true);
-		}
 	}
 }
 
@@ -185,6 +191,15 @@ int main()
 		}
 		RendererUpdate(renderer, game, dt);
 		game.events.clear();  // 연출이 다 읽었으니 비운다
+		if (TransitionCovered(renderer)) {
+			const Renderer::Transition& t = renderer.transition;
+			PlayCard(game, t.handIndex, t.i, t.j);
+			renderer.transition.applied = true;
+			renderer.camera = Camera{};
+			if (game.quit) {
+				glfwSetWindowShouldClose(window, true);
+			}
+		}
 		UpdateHover(window);
 
 		// 3D는 프레임버퍼 크기로, UI는 마우스와 같은 창 좌표로 그린다 (화면 배율이 100%가 아니면 둘이 다르다).
