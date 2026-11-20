@@ -96,6 +96,9 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 		else if (Contains(SpeedRect(width, height), mouse) && (game.phase == Phase::Prepare || game.phase == Phase::Battle)) {
 			renderer.speed = renderer.speed % 3 + 1;
 		}
+		else if (Contains(BetRect(width, height), mouse)) {
+			ToggleBet(game);
+		}
 	}
 	else if (action == GLFW_RELEASE && renderer.dragCard >= 0) {
 		if (HandCardAt(game, mouse, width, height) >= 0) {

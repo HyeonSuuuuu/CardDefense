@@ -9,3 +9,7 @@ starter_units,mage_1 archer_1 warrior_1
 bet_mob_multiplier,1.5
 # 손패 카드를 카드팩 버튼에 끌어다 놓아 팔 때 받는 칩 (2026-11-05 결정)
 sell_chips,1
+# 11/21 뽑기를 더 많이: 대박 팩(확률·추가 카드 수), 손패에 같은 말 카드 merge_count장이 모이면 다음 등급으로 합성
+jackpot_chance,0.06
+jackpot_extra,2
+merge_count,3

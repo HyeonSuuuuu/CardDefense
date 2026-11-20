@@ -150,6 +150,8 @@ void RendererInit(Renderer& renderer)
 	renderer.cardBack = LoadTexture("assets/cards/card_back.png");
 	renderer.promoteCard = LoadTexture("assets/cards/card_promote.png");
 	renderer.goldPack = LoadTexture("assets/ui/pack_gold.png");
+	renderer.betOn = LoadTexture("assets/ui/toggle_bet_on.png");
+	renderer.betOff = LoadTexture("assets/ui/toggle_bet_off.png");
 	renderer.startCard = LoadTexture("assets/cards/card_sys_start.png");
 	renderer.exitCard = LoadTexture("assets/cards/card_sys_exit.png");
 	renderer.retryCard = LoadTexture("assets/cards/card_sys_retry.png");
@@ -170,12 +172,18 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 	// 이번 프레임의 게임 이벤트마다 파티클을 뿌린다
 	int packCount = 0;
 	for (const GameEvent& event : game.events) {
-		if (event.type == EventType::PackCard || event.type == EventType::PackRelic) {
+		if (event.type == EventType::Jackpot) {
+			renderer.jackpotTimer = 0.f;
+			renderer.jackpotSource = (int)event.position.x;
+			continue;
+		}
+		if (event.type == EventType::PackCard || event.type == EventType::PackRelic || event.type == EventType::MergeCard) {
 			Renderer::PackAnim anim;
-			anim.handIndex = event.type == EventType::PackCard ? event.value : -1;
+			anim.handIndex = event.type == EventType::PackRelic ? -1 : event.value;
 			anim.relic = event.type == EventType::PackRelic ? event.value : -1;
 			anim.delay = 0.25f * packCount++;
-			anim.gold = event.position.x > 0.5f;
+			anim.source = (int)(event.position.x + 0.5f);
+			anim.merged = event.type == EventType::MergeCard;
 			renderer.packAnims.push_back(anim);
 			renderer.packHandSize = (int)game.hand.size();
 			continue;
@@ -206,6 +214,9 @@ void RendererUpdate(Renderer& renderer, const Game& game, float dt)
 		}
 	}
 
+	if (renderer.jackpotTimer >= 0.f) {
+		renderer.jackpotTimer += dt;
+	}
 	if (renderer.transition.active) {
 		renderer.transition.time += dt;
 		if (renderer.transition.time >= TransitionIn + TransitionHold + TransitionOut) {
@@ -690,6 +701,12 @@ Rect GoldPackRect(int width, int height)
 	return Rect{ 24.f * s, height - 380.f * s, 120.f * s, 160.f * s };
 }
 
+Rect BetRect(int width, int height)
+{
+	float s = UiScale(height);
+	return Rect{ width - 254.f * s, height - 260.f * s, 200.f * s, 75.f * s };
+}
+
 Rect SpeedRect(int width, int height)
 {
 	float s = UiScale(height);
@@ -771,13 +788,15 @@ static Rect RelicSlotRect(const Game& game, int relic, float s)
 	return Rect{ x, 72.f * s, 48.f * s, 48.f * s };
 }
 
+static void DrawScreenDisc(const Renderer& renderer, glm::vec2 center, float radius, glm::vec3 color, float alpha);
+
 // 카드팩 개봉: 팩 위에서 커지며 y축으로 반 바퀴 돌아 앞면이 보이고, 손패(유물은 유물 줄) 자리로 날아간다
 static void RenderPackAnims(const Renderer& renderer, const Game& game, int width, int height)
 {
 	float s = UiScale(height);
 	int count = (int)game.hand.size();
 	for (const Renderer::PackAnim& a : renderer.packAnims) {
-		Rect pack = a.gold ? GoldPackRect(width, height) : PackRect(width, height);
+		Rect pack = a.source == 1 ? GoldPackRect(width, height) : a.source == 2 ? BetRect(width, height) : PackRect(width, height);
 		float t = (a.age - a.delay) / PackAnimTime;
 		if (t < 0.f) {
 			continue;
@@ -807,8 +826,35 @@ static void RenderPackAnims(const Renderer& renderer, const Game& game, int widt
 		float cx = r.x + r.w * 0.5f;
 		r.w *= squash;
 		r.x = cx - r.w * 0.5f;
-		GLuint texture = !front ? renderer.cardBack : relic ? renderer.relicIcons[a.relic] : CardTexture(renderer, game.hand[a.handIndex]);
+		int card = relic ? -1 : game.hand[a.handIndex];
+		GLuint texture = !front ? renderer.cardBack : relic ? renderer.relicIcons[a.relic] : CardTexture(renderer, card);
+
+		// 합성 카드·영웅 말·승격 카드는 앞면이 보이면 뒤에서 금빛이 퍼진다
+		bool special = a.merged || card == CardPromote || (IsUnitCard(card) && gameData.units[card].tier == 2);
+		if (special && front) {
+			float glow = Clamp01((flip - 0.5f) * 2.f) * (1.f - Clamp01(t * 2.f - 1.f) * 0.6f);
+			glm::vec2 c(r.x + r.w * 0.5f, r.y + r.h * 0.5f);
+			DrawScreenDisc(renderer, c, r.h * (0.6f + 0.25f * glow), glm::vec3(1.f, 0.78f, 0.3f), 0.55f * glow);
+		}
 		DrawRect(renderer, texture, r, glm::vec3(1.f), 1.f);
+	}
+}
+
+// 대박: 팩에서 금빛 원 두 개가 퍼지며 옅어지고 화면이 잠깐 금빛으로 번쩍인다
+static void RenderJackpot(const Renderer& renderer, int width, int height)
+{
+	float t = renderer.jackpotTimer;
+	if (t < 0.f || t > 1.2f) {
+		return;
+	}
+	Rect pack = renderer.jackpotSource == 1 ? GoldPackRect(width, height) : PackRect(width, height);
+	glm::vec2 c(pack.x + pack.w * 0.5f, pack.y + pack.h * 0.5f);
+	float flash = std::max(0.f, 1.f - t / 0.35f);
+	DrawRect(renderer, 0, Rect{ 0.f, 0.f, (float)width, (float)height }, glm::vec3(1.f, 0.85f, 0.4f), 0.35f * flash);
+	for (int k = 0; k < 2; ++k) {
+		float local = Clamp01((t - 0.15f * k) / 0.9f);
+		float radius = EaseOutCubic(local) * height * 0.9f;
+		DrawScreenDisc(renderer, c, radius, glm::vec3(1.f, 0.75f, 0.25f), 0.45f * (1.f - local));
 	}
 }
 
@@ -973,6 +1019,11 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 		snprintf(text, sizeof(text), "x%d", renderer.speed);
 		glm::vec3 speedColor = renderer.speed > 1 ? glm::vec3(1.f, 0.78f, 0.35f) : white;
 		DrawNumber(renderer, text, speed.x + speed.w * 0.5f, speed.y + 7.f * s, 44.f * s, 0.5f, speedColor);
+
+		// 최대 베팅: 정비 중에 켜고 끈다. 전투 중에는 베팅한 라운드일 때만 켜진 채로 보인다
+		bool betShown = game.phase == Phase::Prepare ? game.bet : game.betRound;
+		bool betEnabled = game.phase == Phase::Prepare;
+		DrawRect(renderer, betShown ? renderer.betOn : renderer.betOff, BetRect(width, height), betEnabled || betShown ? white : dim, 1.f);
 	}
 
 	// 손패: 마우스가 올라간 카드는 조금 올리고, 끄는 카드는 마우스를 따라간다
@@ -1001,6 +1052,7 @@ void RenderUi(const Renderer& renderer, const Game& game, int width, int height)
 	}
 
 	RenderPackAnims(renderer, game, width, height);
+	RenderJackpot(renderer, width, height);
 	RenderTransition(renderer, width, height);
 
 	SetFloat(renderer.program, "uAlpha", 1.f);

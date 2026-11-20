@@ -148,6 +148,10 @@ bool LoadGameData()
 		else if (key == "clear_bonus_base") d.clearBonusBase = std::stoi(value);
 		else if (key == "clear_bonus_per_round") d.clearBonusPerRound = std::stoi(value);
 		else if (key == "sell_chips") d.sellChips = std::stoi(value);
+		else if (key == "bet_mob_multiplier") d.betMobMultiplier = std::stof(value);
+		else if (key == "jackpot_chance") d.jackpotChance = std::stof(value);
+		else if (key == "jackpot_extra") d.jackpotExtra = std::stoi(value);
+		else if (key == "merge_count") d.mergeCount = std::stoi(value);
 		else if (key == "starter_units") {
 			std::stringstream ss(value);
 			std::string id;
@@ -356,6 +360,55 @@ int PackCardCount(const Game& game)
 	return 1 + RelicCount(game, RelicEffect::PackExtraCard);
 }
 
+int PromotedType(int type)
+{
+	const UnitData& ud = gameData.units[type];
+	for (int k = 0; k < (int)gameData.units.size(); ++k) {
+		if (gameData.units[k].unitClass == ud.unitClass && gameData.units[k].tier == ud.tier + 1) {
+			return k;
+		}
+	}
+	return -1;
+}
+
+// 새 카드를 손패에 넣고, 같은 말 카드가 mergeCount장 모이면 다음 등급 한 장으로 합친다 (연쇄 가능).
+// 원래 손패 순서는 두고 새 카드·합성 카드는 뒤에 붙여서, 연출이 그 뒤쪽 카드만 가리키게 한다.
+static void AddCardsAndMerge(Game& game, std::vector<int> added, glm::vec3 from)
+{
+	std::vector<int> old = game.hand;
+	std::vector<bool> merged(added.size(), false);
+	for (bool again = true; again;) {
+		again = false;
+		for (int type = 0; type < (int)gameData.units.size() && !again; ++type) {
+			int next = PromotedType(type);
+			int have = (int)std::count(old.begin(), old.end(), type) + (int)std::count(added.begin(), added.end(), type);
+			if (next < 0 || have < gameData.mergeCount) {
+				continue;
+			}
+			// 새로 나온 카드부터 쓴다
+			for (int left = gameData.mergeCount; left > 0; --left) {
+				auto a = std::find(added.begin(), added.end(), type);
+				if (a != added.end()) {
+					merged.erase(merged.begin() + (a - added.begin()));
+					added.erase(a);
+				}
+				else {
+					old.erase(std::find(old.begin(), old.end(), type));
+				}
+			}
+			added.push_back(next);
+			merged.push_back(true);
+			again = true;
+		}
+	}
+	game.hand = old;
+	for (int k = 0; k < (int)added.size(); ++k) {
+		game.hand.push_back(added[k]);
+		EventType type = merged[k] ? EventType::MergeCard : EventType::PackCard;
+		game.events.push_back({ type, from, (int)game.hand.size() - 1 });
+	}
+}
+
 bool CanBuyPack(const Game& game, bool gold)
 {
 	int price = gold ? gameData.goldPrice : gameData.boosterPrice;
@@ -374,7 +427,19 @@ bool BuyPack(Game& game, bool gold)
 	std::discrete_distribution<int> pick(w.begin(), w.end());
 	// 연출이 어느 팩에서 나올지: 이벤트 위치 x = 1이면 골드 부스터
 	glm::vec3 from(gold ? 1.f : 0.f, 0.f, 0.f);
-	for (int n = 0; n < PackCardCount(game); ++n) {
+
+	// 대박: 손패에 자리가 있는 만큼 카드가 더 나온다
+	int count = PackCardCount(game);
+	if (std::uniform_real_distribution<float>(0.f, 1.f)(rng) < gameData.jackpotChance) {
+		int extra = std::min(gameData.jackpotExtra, MaxHand - (int)game.hand.size() - count);
+		if (extra > 0) {
+			count += extra;
+			game.events.push_back({ EventType::Jackpot, from, extra });
+		}
+	}
+
+	std::vector<int> cards;
+	for (int n = 0; n < count; ++n) {
 		const PackOutcome& o = outcomes[pick(rng)];
 		if (o.kind == OutcomeKind::Relic) {
 			int relic = std::uniform_int_distribution<int>(0, (int)gameData.relics.size() - 1)(rng);
@@ -382,11 +447,10 @@ bool BuyPack(Game& game, bool gold)
 			game.events.push_back({ EventType::PackRelic, from, relic });
 			continue;
 		}
-		int card = o.kind == OutcomeKind::Unit ? RandomUnit(o.value)
-			: o.kind == OutcomeKind::Spell ? CardSpellBase + o.value : CardPromote;
-		game.hand.push_back(card);
-		game.events.push_back({ EventType::PackCard, from, (int)game.hand.size() - 1 });
+		cards.push_back(o.kind == OutcomeKind::Unit ? RandomUnit(o.value)
+			: o.kind == OutcomeKind::Spell ? CardSpellBase + o.value : CardPromote);
 	}
+	AddCardsAndMerge(game, cards, from);
 	return true;
 }
 
@@ -403,17 +467,6 @@ static Unit* UnitAt(Game& game, int i, int j)
 static const Unit* UnitAt(const Game& game, int i, int j)
 {
 	return UnitAt(const_cast<Game&>(game), i, j);
-}
-
-int PromotedType(int type)
-{
-	const UnitData& ud = gameData.units[type];
-	for (int k = 0; k < (int)gameData.units.size(); ++k) {
-		if (gameData.units[k].unitClass == ud.unitClass && gameData.units[k].tier == ud.tier + 1) {
-			return k;
-		}
-	}
-	return -1;
 }
 
 bool CanPlayCard(const Game& game, int handIndex, int i, int j)
@@ -600,11 +653,18 @@ void EndTurn(Game& game)
 	game.spawnedCount = 0;
 
 	// 등장 순서: 종류마다 (k + 0.5) / 수 위치에 놓고 정렬해 종류가 고르게 섞이게 한다.
+	// 베팅: 보스(고정 체력 몹)를 뺀 몹 수를 배율만큼 늘린다
+	game.betRound = game.bet;
+	game.bet = false;
 	const RoundData& r = gameData.rounds[game.round - 1];
 	std::vector<std::pair<float, int>> order;
 	for (int type = 0; type < (int)r.counts.size(); ++type) {
-		for (int k = 0; k < r.counts[type]; ++k) {
-			order.push_back({ (k + 0.5f) / r.counts[type], type });
+		int count = r.counts[type];
+		if (game.betRound && gameData.mobs[type].fixedHp <= 0.f) {
+			count = (int)std::round(count * gameData.betMobMultiplier);
+		}
+		for (int k = 0; k < count; ++k) {
+			order.push_back({ (k + 0.5f) / count, type });
 		}
 	}
 	std::stable_sort(order.begin(), order.end(),
@@ -714,6 +774,13 @@ void CheckRoundEnd(Game& game)
 	if (allSpawned && game.mobs.empty()) {
 		game.chips += gameData.clearBonusBase + gameData.clearBonusPerRound * game.round;
 		game.timer = 0.f;
+		// 베팅한 라운드를 깨면 유물 하나
+		if (game.betRound) {
+			int relic = std::uniform_int_distribution<int>(0, (int)gameData.relics.size() - 1)(rng);
+			game.relics.push_back(relic);
+			game.events.push_back({ EventType::PackRelic, glm::vec3(2.f, 0.f, 0.f), relic });
+			game.betRound = false;
+		}
 		if (game.round >= MaxRound) {
 			EnterResult(game, true);
 		}
@@ -724,6 +791,13 @@ void CheckRoundEnd(Game& game)
 	}
 	else if (game.timer >= RoundTimeLimit(game)) {
 		EnterResult(game, false);
+	}
+}
+
+void ToggleBet(Game& game)
+{
+	if (game.phase == Phase::Prepare) {
+		game.bet = !game.bet;
 	}
 }
 
@@ -745,6 +819,7 @@ static void GoToRound(Game& game, int round)
 	game.spawnedCount = 0;
 	game.timer = 0.f;
 	game.round = std::min(round, MaxRound);
+	game.betRound = false;
 	game.phase = Phase::Prepare;
 }
 

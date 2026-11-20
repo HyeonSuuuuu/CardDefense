@@ -71,10 +71,14 @@ struct Renderer
 		int relic = -1;      // 유물이면 relics.csv 행 번호
 		float age = 0.f;
 		float delay = 0.f;   // 한 팩에서 여러 장이 나오면 차례로 나오게
-		bool gold = false;   // 골드 부스터에서 나옴
+		int source = 0;      // 나온 곳: 0 부스터, 1 골드 부스터, 2 베팅 보상
+		bool merged = false; // 같은 카드 3장을 합성한 카드 (빛나는 연출)
 	};
 	std::vector<PackAnim> packAnims;
 	int packHandSize = 0;  // 마지막으로 팩을 산 직후의 손패 수
+	float jackpotTimer = -1.f;  // 대박 연출이 시작된 뒤 지난 시간 (음수면 없음)
+	int jackpotSource = 0;      // 대박이 터진 팩 (0 부스터, 1 골드)
+	GLuint betOn = 0, betOff = 0;
 
 	// 화면 전환 카드(Start/Exit/Retry/Title)를 놓았을 때. 화면이 다 덮이면 main이 카드를 실제로 쓴다
 	struct Transition
@@ -112,6 +116,7 @@ Rect PackRect(int width, int height);
 Rect GoldPackRect(int width, int height);  // 골드 부스터 (일반 카드팩 위)
 Rect EndTurnRect(int width, int height);
 Rect SpeedRect(int width, int height);  // 배속 버튼 (턴 종료 버튼 위)
+Rect BetRect(int width, int height);    // 최대 베팅 스위치 (배속 버튼 위)
 void RenderUi(const Renderer& renderer, const Game& game, int width, int height);
 void StartTransition(Renderer& renderer, glm::vec2 origin, int handIndex, int i, int j);
 bool TransitionCovered(const Renderer& renderer);  // 화면이 다 덮였고 아직 카드를 안 썼으면 true

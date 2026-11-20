@@ -118,6 +118,10 @@ struct GameData
 	int clearBonusPerRound = 1;
 	int boosterPrice = 5;
 	int sellChips = 1;  // 손패 카드를 팩에 끌어다 팔 때 받는 칩
+	float betMobMultiplier = 1.5f;  // 베팅한 라운드의 몹 수 배율 (보스 제외)
+	float jackpotChance = 0.05f;    // 부스터가 대박(카드 추가)일 확률
+	int jackpotExtra = 2;           // 대박이면 더 나오는 카드 수
+	int mergeCount = 3;             // 손패에 같은 말 카드가 이만큼 모이면 다음 등급 한 장으로 합성
 };
 
 extern GameData gameData;
@@ -153,8 +157,8 @@ struct Mob
 constexpr float DieTime = 0.7f;  // 죽은 몹이 사라지는 연출 시간(초)
 
 // 게임에서 일어난 일. Renderer가 읽어 파티클 같은 연출을 만들고, main이 매 프레임 비운다.
-// effects.csv 순서와 맞춘 앞의 넷은 파티클, 뒤의 둘은 UI 연출(value = 손패 번호 / 유물 번호)
-enum class EventType { Summon, Hit, Death, Meteor, PackCard, PackRelic };
+// effects.csv 순서와 맞춘 앞의 넷은 파티클, 뒤는 UI 연출(value = 손패 번호 / 유물 번호, position.x = 1이면 골드 부스터)
+enum class EventType { Summon, Hit, Death, Meteor, PackCard, PackRelic, MergeCard, Jackpot };
 struct GameEvent
 {
 	EventType type;
@@ -172,6 +176,8 @@ struct Game
 	bool won = false;   // Result에서 승패 표시용
 	int kills = 0;      // 결과 통계
 	bool quit = false;  // Exit 카드를 놓으면 true (main이 창을 닫는다)
+	bool bet = false;        // 정비 중 베팅 스위치. 턴 종료 때 betRound로 넘어간다
+	bool betRound = false;   // 이번 전투가 베팅한 라운드인지 (깨면 유물)
 
 	std::vector<int> hand;   // 손패 카드 (위 카드 번호)
 	std::vector<int> relics; // 가진 유물 (relics.csv 행 번호, 같은 유물이 여러 번 들어갈 수 있다)
@@ -208,6 +214,7 @@ float RoundTimeLimit(const Game& game);
 float UnitDamage(const Game& game, const Unit& unit);
 int PackCardCount(const Game& game);                     // 팩 하나에서 나오는 결과 수
 void EndTurn(Game& game);                                // 정비 → 전투
+void ToggleBet(Game& game);                              // 정비 중 베팅 켜고 끄기
 
 // 전투 페이즈 (GameUpdate에서 호출)
 void SpawnMobs(Game& game, float dt);

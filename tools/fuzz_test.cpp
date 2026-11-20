@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 		else if (a == 24 && R(0, 9) == 0) DemoAddChips(game);
 		else if (a == 25 && R(0, 30) == 0) DemoBossRound(game);
 		else if (a == 26) DemoReplayEffects(game);
+		else if (a == 31) ToggleBet(game);
 		else if (a == 27 && R(0, 50) == 0) renderer.toon = !renderer.toon;
 		else if (a == 28 && R(0, 50) == 0) renderer.shadows = !renderer.shadows;
 		else if (a == 29 && R(0, 2000) == 0) GameInit(game);
