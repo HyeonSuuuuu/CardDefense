@@ -271,11 +271,16 @@ static void EnterResult(Game& game, bool won)
 	game.hand = { CardRetry, CardTitle };
 }
 
+static int RandomUnit(int tier);
+
 void StartGame(Game& game)
 {
 	game = Game{};
 	game.phase = Phase::Prepare;
-	game.hand = gameData.starterUnits;
+	// 시작 손패: 일반 말 3장을 무작위로 (같은 종류가 겹칠 수도 있다)
+	for (int k = 0; k < (int)gameData.starterUnits.size(); ++k) {
+		game.hand.push_back(RandomUnit(0));
+	}
 }
 
 void GameUpdate(Game& game, float dt)
