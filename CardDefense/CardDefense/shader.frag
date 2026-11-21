@@ -4,6 +4,7 @@ in vec3 vLocalPos;
 in vec3 vNormal;
 in vec2 vUV;
 in vec4 vLightPos;
+in vec4 vPaintPos;
 uniform vec3 uColor;
 uniform int uUseTexture;     // 1이면 텍스처 색 × uColor
 uniform sampler2D uTexture;
@@ -16,6 +17,10 @@ uniform float uAlpha;        // 불투명도 (텍스처 알파와 곱함)
 uniform float uDissolve;     // 0~1, 사라지는 정도 (0이면 끔)
 uniform sampler2D uShadowMap;
 uniform int uShadowOn;
+uniform sampler2D uPaint;    // 판 원화 (기본 카메라 시점 그림)
+uniform int uPaintOn;
+uniform int uPaintSurface;   // 1이면 이 물체에 원화를 투사한다 (판)
+uniform vec3 uPaintPos;      // 프로젝터 위치 = 기본 카메라 위치
 out vec4 fragColor;
 
 // ---- fBm 노이즈: 격자 꼭짓점마다 난수를 두고 부드럽게 보간한 값 노이즈를 여러 크기로 겹친다
@@ -91,7 +96,23 @@ void main()
 		alpha *= texel.a;
 	}
 
-	if (uLighting == 1) {
+	// 투사 텍스처 매핑: 프로젝터 클립 좌표를 w로 나눠 0~1 그림 좌표로. 프로젝터를 향한 면에만
+	bool painted = false;
+	if (uPaintOn == 1 && uPaintSurface == 1 && vPaintPos.w > 0.0) {
+		vec2 uv = vPaintPos.xy / vPaintPos.w * 0.5 + 0.5;
+		bool facing = dot(normalize(vNormal), uPaintPos - vWorldPos) > 0.0;
+		if (facing && all(greaterThanEqual(uv, vec2(0.0))) && all(lessThanEqual(uv, vec2(1.0)))) {
+			color = uColor * texture(uPaint, uv).rgb;
+			painted = true;
+		}
+	}
+
+	if (painted && uLighting == 1) {
+		// 원화에 명암이 이미 그려져 있으므로 조명은 다시 하지 않고, 말이 드리운 그림자만 얹는다
+		float shadow = uShadowOn == 1 ? Shadow(normalize(vNormal)) : 0.0;
+		color *= 1.0 - 0.45 * shadow;
+	}
+	else if (uLighting == 1) {
 		vec3 n = normalize(vNormal);
 		if (!gl_FrontFacing) {
 			n = -n;  // 활시위처럼 얇은 면은 뒷면도 보이므로 법선을 뒤집는다

@@ -130,6 +130,14 @@ void RendererInit(Renderer& renderer)
 	renderer.stoneTexture = LoadTexture("assets/textures/path_stone.png");
 	renderer.woodTexture = LoadTexture("assets/textures/board_wood.png");
 	renderer.tableTexture = LoadTexture("assets/textures/table_wood.png");
+	renderer.boardArt = LoadTexture("assets/paint/board_art.png");
+	if (renderer.boardArt) {
+		// 그림 밖으로 나간 좌표가 반대쪽 가장자리를 읽지 않게
+		glBindTexture(GL_TEXTURE_2D, renderer.boardArt);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
 	// 카드 그림은 tools/compose_cards.py로 합성한 완성 카드
 	for (const UnitData& ud : gameData.units) {
@@ -277,6 +285,12 @@ glm::mat4 LightSpaceMatrix()
 }
 
 // 1패스: 빛에서 본 말·몹의 깊이만 그림자 맵에 그린다
+glm::mat4 PaintMatrix()
+{
+	// 원화는 기본 카메라에서 16:9로 찍은 구조 렌더 위에 그렸으므로 같은 시점·시야각으로 되쏜다
+	return glm::perspective(glm::radians(45.f), 16.f / 9.f, 0.1f, 100.f) * ViewMatrix(Camera{});
+}
+
 static void RenderShadowMap(const Renderer& renderer, const Game& game)
 {
 	// 그림자 맵에 그리는 동안 같은 텍스처를 읽으려고 묶어 두면 안 되므로 1번 유닛에서 뺀다
@@ -329,6 +343,13 @@ void RenderGame(const Renderer& renderer, const Game& game, int width, int heigh
 	glActiveTexture(GL_TEXTURE0);
 	SetInt(renderer.program, "uShadowMap", 1);
 	SetInt(renderer.program, "uShadowOn", renderer.shadows ? 1 : 0);
+	SetMat4(renderer.program, "uPaintMatrix", PaintMatrix());
+	SetVec3(renderer.program, "uPaintPos", glm::vec3(glm::inverse(ViewMatrix(Camera{}))[3]));
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, renderer.boardArt);
+	glActiveTexture(GL_TEXTURE0);
+	SetInt(renderer.program, "uPaint", 2);
+	SetInt(renderer.program, "uPaintOn", renderer.paint && renderer.boardArt ? 1 : 0);
 
 	RenderBoard(renderer, game);
 	RenderUnits(renderer, game);
@@ -360,6 +381,7 @@ void RenderBoard(const Renderer& renderer, const Game& game)
 	const float height = 0.1f;
 	const float gap = 0.06f;  // 타일 사이 틈 (경계가 보이도록)
 	const float boardHalf = BoardSize * TileSize * 0.5f;
+	SetInt(renderer.program, "uPaintSurface", 1);  // 판에만 원화를 쏜다 (말·적은 3D로 따로)
 
 	// 작업대: 넓은 나무판, 텍스처를 여러 번 반복
 	DrawTexturedBox(renderer, renderer.tableTexture, glm::vec3(0.f, -0.45f, 0.f), glm::vec3(30.f, 0.1f, 30.f), white, glm::vec2(5.f));
@@ -392,6 +414,7 @@ void RenderBoard(const Renderer& renderer, const Game& game)
 			DrawTexturedBox(renderer, texture, position, size, color, glm::vec2(1.f), &renderer.roundTile);
 		}
 	}
+	SetInt(renderer.program, "uPaintSurface", 0);
 }
 
 // +Z를 보던 모델이 방향 dir(바닥 평면)을 보도록 하는 Y축 회전 각도

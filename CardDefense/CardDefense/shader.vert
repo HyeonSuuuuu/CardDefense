@@ -13,6 +13,8 @@ out vec3 vLocalPos;  // 모델 좌표 (디졸브 노이즈가 몹을 따라 움�
 out vec3 vNormal;    // 월드 공간 법선
 out vec2 vUV;
 out vec4 vLightPos;  // 빛에서 본 위치
+uniform mat4 uPaintMatrix; // 월드 → 원화 프로젝터의 클립 좌표
+out vec4 vPaintPos;  // 프로젝터에서 본 위치 (투사 텍스처 좌표)
 void main()
 {
 	vec4 world = uModel * vec4(aPosition + aNormal * uOutline, 1.0);
@@ -23,4 +25,5 @@ void main()
 	vNormal = mat3(transpose(inverse(uModel))) * aNormal;
 	vUV = uUVRect.xy + aUV * uUVRect.zw;
 	vLightPos = uLightSpace * world;
+	vPaintPos = uPaintMatrix * world;
 }

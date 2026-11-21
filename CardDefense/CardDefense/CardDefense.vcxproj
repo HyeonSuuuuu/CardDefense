@@ -204,6 +204,7 @@
       <TextureFiles Include="$(ProjectDir)..\..\assets\textures\**\*" />
       <CardFiles Include="$(ProjectDir)..\..\assets\cards\card_*.png" />
       <UiFiles Include="$(ProjectDir)..\..\assets\ui\*.png" />
+      <PaintFiles Include="$(ProjectDir)..\..\assets\paint\board_art.png" Condition="Exists('$(ProjectDir)..\..\assets\paint\board_art.png')" />
       <DllFiles Include="$(ProjectDir)..\..\external\bin\*.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
@@ -213,5 +214,6 @@
     <Copy SourceFiles="@(TextureFiles)" DestinationFolder="$(OutDir)assets\textures\%(RecursiveDir)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(CardFiles)" DestinationFolder="$(OutDir)assets\cards" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(UiFiles)" DestinationFolder="$(OutDir)assets\ui" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PaintFiles)" DestinationFolder="$(OutDir)assets\paint" SkipUnchangedFiles="true" />
   </Target>
 </Project>

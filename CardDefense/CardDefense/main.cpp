@@ -1,4 +1,4 @@
-﻿#include "Game.h"
+#include "Game.h"
 #include "Renderer.h"
 #include "Util/Picking.h"
 #include <algorithm>
@@ -26,6 +26,7 @@ void CharCallback(GLFWwindow* window, unsigned int c)
 	case 'p': renderer.isOrtho = !renderer.isOrtho; break;
 	case 't': case 'T': renderer.toon = !renderer.toon; break;
 	case 'g': case 'G': renderer.shadows = !renderer.shadows; break;
+	case 'v': case 'V': renderer.paint = !renderer.paint; break;
 	case 'f': case 'F': renderer.speed = renderer.speed % 3 + 1; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}

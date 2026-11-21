@@ -34,6 +34,7 @@
 | 오른쪽 버튼 드래그 / 휠 / R | 카메라 회전 / 줌 / 처음 시점 |
 | T | 툰 셰이딩 ↔ 퐁 셰이딩 |
 | G | 그림자(그림자 맵) 끄고 켜기 |
+| V | 판 원화 투사 끄고 켜기 (`assets/paint/board_art.png`가 있을 때) |
 | 배속 버튼 클릭 / F | 게임 속도 x1 → x2 → x3 |
 | F1 / F2 / F3 / F4 | 발표용: 다음 라운드로 / 칩 +50 / 보스 라운드(10)로 / 소환·피격·처치 이펙트 다시 보기 (게임 중에만) |
 | ESC, Q | 종료 |
@@ -71,6 +72,7 @@
 - `tools/fuzz_test.cpp`: 무작위 조작 퍼즈 테스트. Debug 런타임으로 빌드: `cl /EHsc /Od /MDd /D_DEBUG /DGLFW_DLL /utf-8 /ICardDefense\CardDefense /Iexternal\include tools\fuzz_test.cpp CardDefense\CardDefense\Game.cpp CardDefense\CardDefense\Renderer.cpp CardDefense\CardDefense\Common.cpp CardDefense\CardDefense\Util\*.cpp /link /LIBPATH:external\lib opengl32.lib glew32.lib glfw3dll.lib`
 - `tools/record_demo.cpp`: 발표 데모 순서대로 조작하는 게임 플레이 영상 녹화 (프레임을 ffmpeg로 넘겨 mp4). 빌드는 capture_playthrough와 같고, 실행 방법은 파일 첫 줄
 - `tools/capture_playthrough.cpp`: 숨긴 창에서 봇이 한 판을 하며 보고서용 화면을 저장한다. 결과는 `docs/screenshots/`
+- `tools/capture_board.cpp`: 판 원화용 구조 렌더. 기본 시점에서 판만 1920×1080으로 찍는다 (`capture_board.exe <bmp>`, 원화 확인은 `<bmp> paint <yaw>`). 빌드는 capture_playthrough와 같음
 
 ## 빌드 환경
 

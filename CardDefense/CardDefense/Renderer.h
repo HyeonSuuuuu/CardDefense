@@ -50,6 +50,8 @@ struct Renderer
 
 	// 판 텍스처
 	GLuint grassTexture = 0, stoneTexture = 0, woodTexture = 0, tableTexture = 0;
+	GLuint boardArt = 0;           // 판 원화 (assets/paint/board_art.png). 없으면 칸별 텍스처만
+	bool paint = true;             // 원화 투사 (V 키로 끄고 켜기)
 
 	// UI 텍스처
 	std::vector<GLuint> unitCards;  // units.csv 순서
@@ -103,6 +105,7 @@ glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect);
 void RendererUpdate(Renderer& renderer, const Game& game, float dt);  // 게임 이벤트로 파티클을 만들고 움직인다
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
 glm::mat4 LightSpaceMatrix();  // 월드 → 빛의 클립 좌표 (직교 투영 × 빛 시점)
+glm::mat4 PaintMatrix();       // 월드 → 원화 프로젝터의 클립 좌표 (기본 카메라, 16:9)
 void RenderBoard(const Renderer& renderer, const Game& game);
 void RenderUnits(const Renderer& renderer, const Game& game);
 void RenderMobs(const Renderer& renderer, const Game& game);

@@ -23,7 +23,7 @@ RELEASE = os.path.join(ROOT, "CardDefense", "x64", "Release")
 CRT_DLLS = ["msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"]
 
 # 게임이 실행 중에 읽는 assets (vcxproj의 CopyGameFiles와 같은 범위)
-GAME_ASSETS = ["assets/obj", "assets/textures", "assets/cards/card_*.png", "assets/ui/*.png"]
+GAME_ASSETS = ["assets/obj", "assets/textures", "assets/cards/card_*.png", "assets/ui/*.png", "assets/paint/board_art.png"]
 
 # 프로젝트 폴더에서 뺄 것 (빌드 결과물, 개인 설정)
 IGNORE = shutil.ignore_patterns("x64", "Win32", ".vs", "*.user", "*.pdb", "*.ilk", "*.obj", "*.tlog", "*.log")
