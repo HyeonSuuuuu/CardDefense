@@ -54,7 +54,7 @@ struct Renderer
 	bool paint = true;             // 원화 투사 (V 키로 끄고 켜기)
 
 	// 회화풍 후처리: 3D 장면을 텍스처에 그린 뒤 쿠와하라 필터로 화면에 옮긴다 (K 키, UI는 필터 밖)
-	bool painterly = true;
+	bool painterly = false;
 	GLuint postProgram = 0, postVao = 0;
 	GLuint sceneFbo = 0, sceneColor = 0, sceneDepth = 0;
 	int sceneWidth = 0, sceneHeight = 0;
