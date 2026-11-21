@@ -19,7 +19,9 @@ static void Frame(const char* shot = nullptr)
 	GameUpdate(game, dt);
 	RendererUpdate(renderer, game, dt);
 	game.events.clear();
+	BeginScene(renderer, width, height);
 	RenderGame(renderer, game, width, height);
+	EndScene(renderer, width, height);
 	RenderUi(renderer, game, width, height);
 	for (GLenum e; (e = glGetError()) != GL_NO_ERROR;) {
 		++glErrors;

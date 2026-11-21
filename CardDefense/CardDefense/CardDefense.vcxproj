@@ -182,6 +182,8 @@
   <ItemGroup>
     <None Include="shader.vert" />
     <None Include="shader.frag" />
+    <None Include="post.vert" />
+    <None Include="post.frag" />
     <None Include="Data\units.csv" />
     <None Include="Data\mobs.csv" />
     <None Include="Data\rounds.csv" />
@@ -198,7 +200,7 @@
   <!-- 빌드 후 셰이더·Data·assets·DLL을 exe 폴더로 복사 (바뀐 파일만) -->
   <Target Name="CopyGameFiles" AfterTargets="Build">
     <ItemGroup>
-      <ShaderFiles Include="$(ProjectDir)shader.*" />
+      <ShaderFiles Include="$(ProjectDir)shader.*;$(ProjectDir)post.*" />
       <DataFiles Include="$(ProjectDir)Data\**\*" />
       <ObjFiles Include="$(ProjectDir)..\..\assets\obj\**\*" />
       <TextureFiles Include="$(ProjectDir)..\..\assets\textures\**\*" />

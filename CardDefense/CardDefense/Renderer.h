@@ -53,6 +53,13 @@ struct Renderer
 	GLuint boardArt = 0;           // 판 원화 (assets/paint/board_art.png). 없으면 칸별 텍스처만
 	bool paint = true;             // 원화 투사 (V 키로 끄고 켜기)
 
+	// 회화풍 후처리: 3D 장면을 텍스처에 그린 뒤 쿠와하라 필터로 화면에 옮긴다 (K 키, UI는 필터 밖)
+	bool painterly = true;
+	GLuint postProgram = 0, postVao = 0;
+	GLuint sceneFbo = 0, sceneColor = 0, sceneDepth = 0;
+	int sceneWidth = 0, sceneHeight = 0;
+	GLint outputFbo = 0;  // 필터 결과를 그릴 프레임버퍼 (보통 화면 = 0)
+
 	// UI 텍스처
 	std::vector<GLuint> unitCards;  // units.csv 순서
 	std::vector<GLuint> spellCards; // spells.csv 순서
@@ -104,6 +111,8 @@ glm::mat4 ViewMatrix(const Camera& camera);
 glm::mat4 ProjectionMatrix(const Renderer& renderer, float aspect);
 void RendererUpdate(Renderer& renderer, const Game& game, float dt);  // 게임 이벤트로 파티클을 만들고 움직인다
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height);
+void BeginScene(Renderer& renderer, int width, int height);  // 후처리를 켰으면 장면 프레임버퍼로 그리기 시작
+void EndScene(const Renderer& renderer, int width, int height);  // 장면 텍스처를 필터로 화면에 옮긴다
 glm::mat4 LightSpaceMatrix();  // 월드 → 빛의 클립 좌표 (직교 투영 × 빛 시점)
 glm::mat4 PaintMatrix();       // 월드 → 원화 프로젝터의 클립 좌표 (기본 카메라, 16:9)
 void RenderBoard(const Renderer& renderer, const Game& game);

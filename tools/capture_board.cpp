@@ -9,7 +9,7 @@
 int main(int argc, char** argv)
 {
 	if (argc < 2) {
-		printf("사용: capture_board.exe <저장할 bmp> [paint [yaw]]\n");
+		printf("사용: capture_board.exe <저장할 bmp> [paint [yaw [post]]]\n");
 		return 1;
 	}
 	glfwInit();
@@ -31,6 +31,7 @@ int main(int argc, char** argv)
 	// 기본은 원화를 끄고 원래 칸 텍스처로 찍는다. paint를 주면 원화 투사 확인용 (yaw: 카메라를 돌려서)
 	renderer.paint = argc > 2 && std::string(argv[2]) == "paint";
 	renderer.camera.yaw = argc > 3 ? (float)atof(argv[3]) : 0.f;
+	renderer.painterly = argc > 4 && std::string(argv[4]) == "post";  // 회화풍 후처리까지 거친 화면
 	renderer.shadows = false;  // 그림자 패스가 기본 프레임버퍼로 되돌리지 않게 (말이 없어 그림자도 없음)
 	// 창은 화면 크기에 잘리므로 크기를 정확히 맞춘 프레임버퍼에 그린다
 	const int width = 1920, height = 1080;
@@ -49,7 +50,9 @@ int main(int argc, char** argv)
 		printf("framebuffer incomplete\n");
 		return 1;
 	}
+	BeginScene(renderer, width, height);
 	RenderGame(renderer, game, width, height);
+	EndScene(renderer, width, height);
 	bool ok = SaveScreenshotBmp(argv[1], width, height);
 	printf("%s %dx%d\n", ok ? "saved" : "failed", width, height);
 	glfwTerminate();

@@ -84,6 +84,8 @@ static GLuint CreateDotTexture()
 void RendererInit(Renderer& renderer)
 {
 	renderer.program = CreateProgram("shader.vert", "shader.frag");
+	renderer.postProgram = CreateProgram("post.vert", "post.frag");
+	glGenVertexArrays(1, &renderer.postVao);  // 코어 프로필은 정점 버퍼가 없어도 VAO가 묶여 있어야 그린다
 	renderer.axes = CreateAxes();
 	renderer.cube = CreateCube();
 	renderer.quad = CreateQuad();
@@ -297,6 +299,8 @@ static void RenderShadowMap(const Renderer& renderer, const Game& game)
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glActiveTexture(GL_TEXTURE0);
+	GLint target = 0;  // 다 그린 뒤 돌아갈 프레임버퍼 (화면 또는 후처리용 장면 프레임버퍼)
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &target);
 	glBindFramebuffer(GL_FRAMEBUFFER, renderer.shadowFbo);
 	glViewport(0, 0, ShadowSize, ShadowSize);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -307,7 +311,61 @@ static void RenderShadowMap(const Renderer& renderer, const Game& game)
 	RenderUnits(renderer, game);
 	RenderMobs(renderer, game);
 	shadowPass = false;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, target);
+}
+
+void BeginScene(Renderer& renderer, int width, int height)
+{
+	if (!renderer.painterly) {
+		return;
+	}
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &renderer.outputFbo);
+	// 창 크기가 바뀌면 색 텍스처와 깊이 버퍼를 새 크기로 다시 만든다
+	if (renderer.sceneWidth != width || renderer.sceneHeight != height) {
+		if (!renderer.sceneFbo) {
+			glGenFramebuffers(1, &renderer.sceneFbo);
+			glGenTextures(1, &renderer.sceneColor);
+			glGenRenderbuffers(1, &renderer.sceneDepth);
+		}
+		glBindTexture(GL_TEXTURE_2D, renderer.sceneColor);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindRenderbuffer(GL_RENDERBUFFER, renderer.sceneDepth);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+		glBindFramebuffer(GL_FRAMEBUFFER, renderer.sceneFbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderer.sceneColor, 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderer.sceneDepth);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			printf("scene framebuffer incomplete\n");
+		}
+		renderer.sceneWidth = width;
+		renderer.sceneHeight = height;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer.sceneFbo);
+}
+
+void EndScene(const Renderer& renderer, int width, int height)
+{
+	if (!renderer.painterly) {
+		return;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer.outputFbo);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glUseProgram(renderer.postProgram);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderer.sceneColor);
+	SetInt(renderer.postProgram, "uScene", 0);
+	SetInt(renderer.postProgram, "uRadius", std::max(2, (int)std::lround(height / 720.f * 4.f)));  // 해상도가 커져도 붓 크기가 같게
+	glBindVertexArray(renderer.postVao);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void RenderGame(const Renderer& renderer, const Game& game, int width, int height)

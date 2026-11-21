@@ -27,6 +27,7 @@ void CharCallback(GLFWwindow* window, unsigned int c)
 	case 't': case 'T': renderer.toon = !renderer.toon; break;
 	case 'g': case 'G': renderer.shadows = !renderer.shadows; break;
 	case 'v': case 'V': renderer.paint = !renderer.paint; break;
+	case 'k': case 'K': renderer.painterly = !renderer.painterly; break;
 	case 'f': case 'F': renderer.speed = renderer.speed % 3 + 1; break;
 	case 'q': case 'Q': glfwSetWindowShouldClose(window, true); break;
 	}
@@ -221,7 +222,9 @@ int main()
 		glfwGetFramebufferSize(window, &width, &height);
 		glfwGetWindowSize(window, &windowWidth, &windowHeight);
 		if (width > 0 && height > 0 && windowWidth > 0 && windowHeight > 0) {
+			BeginScene(renderer, width, height);
 			RenderGame(renderer, game, width, height);
+			EndScene(renderer, width, height);
 			RenderUi(renderer, game, windowWidth, windowHeight);
 		}
 		glfwSwapBuffers(window);
